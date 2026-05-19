@@ -1,0 +1,39 @@
+# Host-side Nginx config — drop into /etc/nginx/sites-available/ on the droplet
+# Replace ${DOMAIN} with your actual domain (e.g. backtestingengine.insightfusionanalytics.com)
+# After:
+#   ln -s /etc/nginx/sites-available/ifa-backtest /etc/nginx/sites-enabled/
+#   nginx -t && systemctl reload nginx
+#   certbot --nginx -d ${DOMAIN}   # SSL via Let's Encrypt
+
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    # Frontend container (Docker bridge network)
+    location / {
+        proxy_pass http://127.0.0.1:5173;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Backend API — same domain, /api path
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 25M;     # strategy uploads up to 25MB
+    }
+
+    # Healthcheck passthrough (for uptime probes)
+    location = /healthz {
+        proxy_pass http://127.0.0.1:8000/healthz;
+        access_log off;
+    }
+}

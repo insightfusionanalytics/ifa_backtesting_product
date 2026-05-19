@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ifa-backend:latest
+    container_name: ifa-backend
+    restart: unless-stopped
+    env_file: .env.production
+    volumes:
+      # Firebase service account (bind-mounted from droplet — never in image)
+      - ./backend/secrets/firebase-admin.json:/app/backend/secrets/firebase-admin.json:ro
+    environment:
+      FIREBASE_CREDENTIALS_PATH: /app/backend/secrets/firebase-admin.json
+    ports:
+      - "127.0.0.1:8000:8000"   # only bind to localhost — host Nginx reverse-proxies
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
+    image: ifa-frontend:latest
+    container_name: ifa-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:5173:80"     # only bind to localhost — host Nginx reverse-proxies

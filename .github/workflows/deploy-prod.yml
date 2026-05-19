@@ -1,0 +1,36 @@
+name: Deploy → production
+
+# Manual gate — only runs when triggered from the GitHub Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch, tag, or SHA — usually main)"
+        required: true
+        default: "main"
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://backtestingengine.insightfusionanalytics.com
+    steps:
+      - name: SSH to droplet and deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/ifa-backtest-product
+            export REPO_REF=${{ inputs.ref }}
+            git fetch origin
+            git reset --hard "origin/${REPO_REF#origin/}" || git reset --hard "$REPO_REF"
+            ./deploy.sh
