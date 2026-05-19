@@ -28,22 +28,38 @@ export default function App() {
   const setLoading = useAuth((s) => s.setLoading);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    let cancelled = false;
+
+    const resolve = async (user: typeof auth.currentUser) => {
+      if (cancelled) return;
       if (!user) {
         setMe(null);
-        setLoading(false);
-        return;
+      } else {
+        try {
+          const me = await fetchMe();
+          if (!cancelled) setMe(me);
+        } catch {
+          if (!cancelled) setMe(null);
+        }
       }
-      try {
-        const me = await fetchMe();
-        setMe(me);
-      } catch {
-        setMe(null);
-      } finally {
-        setLoading(false);
-      }
-    });
-    return () => unsub();
+      if (!cancelled) setLoading(false);
+    };
+
+    // Subscribe for ongoing auth changes
+    const unsub = onAuthStateChanged(auth, (user) => resolve(user));
+    // Hard-resolve on initial load via authStateReady (handles persisted sessions)
+    auth.authStateReady().then(() => resolve(auth.currentUser));
+
+    // Safety net: if neither fires within 4s, stop spinning
+    const failsafe = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(failsafe);
+      unsub();
+    };
   }, [setMe, setLoading]);
 
   return (
