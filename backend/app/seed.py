@@ -4,15 +4,21 @@ Run:
     cd backend
     python -m app.seed
 """
+import hashlib
+import json
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
+from jsonschema import Draft202012Validator
 from loguru import logger
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import create_firebase_user, get_firebase_user_by_email, init_firebase
-from app.db.models import Client, TermsVersion, User
+from app.db.models import Backtest, BacktestFile, Client, TermsVersion, User
 from app.db.session import SessionLocal
+from app.services import storage
 
 DEMO_CLIENT_NAME = "Sterling Capital Advisors"
 DEMO_CLIENT_EMAIL = "demo.client@sterlingcap.test"
@@ -110,10 +116,96 @@ def seed(db: Session) -> None:
     else:
         logger.info("Demo client user already exists ({})", client_user.id)
 
+    # 5. Demo backtest — uses the locked v1.0 schema example file
+    _seed_demo_backtest(db, client)
+
     db.commit()
     logger.success("Seed complete")
     logger.info("Main admin login: {} / {}", settings.MAIN_ADMIN_EMAIL, settings.MAIN_ADMIN_INITIAL_PASSWORD)
     logger.info("Demo client login: {} / {}", DEMO_CLIENT_EMAIL, DEMO_CLIENT_PASSWORD)
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2].parent
+SCHEMA_PATH = REPO_ROOT / "schemas" / "backtest.schema.json"
+EXAMPLE_PATH = REPO_ROOT / "schemas" / "backtest.example.json"
+
+
+def _seed_demo_backtest(db: Session, client: Client) -> None:
+    """Load schemas/backtest.example.json, validate against schema, upload to bucket,
+    insert backtests + backtest_files rows. Plus a few dummy rows in other statuses."""
+    existing = (
+        db.query(Backtest)
+        .filter(Backtest.client_id == client.id, Backtest.code == "BT-2026-0001")
+        .first()
+    )
+    if existing:
+        logger.info("Demo backtest already seeded ({})", existing.id)
+    else:
+        if not EXAMPLE_PATH.exists() or not SCHEMA_PATH.exists():
+            logger.warning("Schema or example file not found, skipping demo backtest seed")
+            return
+
+        schema = json.loads(SCHEMA_PATH.read_text())
+        example = json.loads(EXAMPLE_PATH.read_text())
+        errors = list(Draft202012Validator(schema).iter_errors(example))
+        if errors:
+            logger.error("Demo backtest fails schema validation: {}", errors[:3])
+            return
+
+        bt_id = uuid.uuid4()
+        # Stamp client id into the example payload
+        example["client"] = {"client_id": str(client.id), "client_name": client.name}
+        raw = json.dumps(example, ensure_ascii=False).encode("utf-8")
+        checksum = hashlib.sha256(raw).hexdigest()
+
+        storage_key = f"clients/{client.id}/backtests/{bt_id}/result.json"
+        storage.upload_bytes(storage_key, raw, "application/json")
+
+        backtest = Backtest(
+            id=bt_id,
+            client_id=client.id,
+            name=example["strategy"]["name"],
+            code=example["backtest_id"],
+            status="completed",
+            assumptions=example["assumptions"],
+            metrics=example["metrics"],
+            completed_at=datetime.now(timezone.utc),
+        )
+        db.add(backtest)
+        db.flush()
+
+        bf = BacktestFile(
+            backtest_id=backtest.id,
+            file_type="result_json",
+            storage_key=storage_key,
+            size_bytes=len(raw),
+            checksum=checksum,
+        )
+        db.add(bf)
+        db.flush()
+        logger.info("Seeded demo backtest BT-2026-0001 ({}) + result JSON in bucket", backtest.id)
+
+    # Dummy backtests in various statuses so the list page has variety
+    dummies = [
+        ("BT-2026-0002", "Mean Reversion BankNifty", "in_progress"),
+        ("BT-2026-0003", "Momentum Smallcap",        "approved"),
+        ("BT-2026-0004", "Pairs HDFC/ICICI",          "quote_sent"),
+        ("BT-2026-0005", "Volatility Carry",          "draft"),
+    ]
+    for code, name, status_ in dummies:
+        if db.query(Backtest).filter(Backtest.client_id == client.id, Backtest.code == code).first():
+            continue
+        db.add(
+            Backtest(
+                client_id=client.id,
+                name=name,
+                code=code,
+                status=status_,
+                assumptions=None,
+                metrics=None,
+            )
+        )
+    db.flush()
 
 
 if __name__ == "__main__":
