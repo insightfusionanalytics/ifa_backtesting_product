@@ -29,3 +29,25 @@ export async function fetchMe(): Promise<Me> {
   const res = await api.get<Me>("/me");
   return res.data;
 }
+
+export type TermsClause = { id: string; title: string; body: string; required: boolean };
+export type Terms = {
+  id: string;
+  version: string;
+  body: string;
+  clauses: TermsClause[];
+  effective_from: string;
+};
+
+export async function fetchTerms(): Promise<Terms> {
+  const res = await api.get<Terms>("/terms/current");
+  return res.data;
+}
+
+export async function acceptTerms(version_id: string, accepted_clauses: string[]) {
+  const res = await api.post<{ ok: boolean; acceptance_id: string }>("/terms/accept", {
+    version_id,
+    accepted_clauses,
+  });
+  return res.data;
+}
