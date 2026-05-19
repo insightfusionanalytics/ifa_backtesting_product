@@ -21,9 +21,10 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       const me = await fetchMe();
       setMe(me);
-      if (me.role === "client" && me.needs_tnc_acceptance) navigate("/terms");
-      else if (me.role === "client") navigate("/");
-      else navigate("/admin");
+      const isAdmin = me.role === "main_admin" || me.role === "sub_admin";
+      if (isAdmin) navigate("/admin");
+      else if (me.needs_tnc_acceptance) navigate("/terms");
+      else navigate("/");
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? err?.message ?? "Login failed");
     } finally {

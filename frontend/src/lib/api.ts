@@ -187,3 +187,97 @@ export async function fetchBacktest(id: string): Promise<BacktestDetail> {
   const res = await api.get<BacktestDetail>(`/backtests/${id}`);
   return res.data;
 }
+
+// ── Admin ───────────────────────────────────────────────────────
+export type PlatformStats = {
+  n_clients: number;
+  n_clients_active: number;
+  n_backtests: number;
+  n_backtests_completed: number;
+  n_requests_open: number;
+  tier_distribution: Record<string, number>;
+};
+
+export async function fetchPlatformStats(): Promise<PlatformStats> {
+  return (await api.get<PlatformStats>("/admin/stats")).data;
+}
+
+export type AdminClient = {
+  id: string;
+  name: string;
+  primary_contact: string | null;
+  tier: "tier1" | "tier2" | "tier3";
+  status: "active" | "suspended";
+  deleted_at: string | null;
+  created_at: string;
+};
+
+export async function fetchAdminClients(): Promise<AdminClient[]> {
+  return (await api.get<AdminClient[]>("/admin/clients")).data;
+}
+
+export async function createAdminClient(args: {
+  name: string;
+  primary_contact?: string;
+  tier?: "tier1" | "tier2" | "tier3";
+  user_email: string;
+  user_password: string;
+}) {
+  return (await api.post("/admin/clients", args)).data;
+}
+
+export async function updateAdminClient(id: string, patch: Partial<AdminClient>) {
+  return (await api.patch<AdminClient>(`/admin/clients/${id}`, patch)).data;
+}
+
+export async function deleteAdminClient(id: string) {
+  await api.delete(`/admin/clients/${id}`);
+}
+
+export async function uploadBacktestResult(client_id: string, result: object) {
+  return (
+    await api.post("/admin/backtests/upload-result", { client_id, result })
+  ).data;
+}
+
+export async function publishTerms(args: {
+  version: string;
+  body: string;
+  clauses: Array<{ id: string; title: string; body: string; required: boolean }>;
+}) {
+  return (await api.post("/admin/terms", args)).data;
+}
+
+export async function fetchAdminTerms() {
+  return (await api.get("/admin/terms")).data;
+}
+
+export async function broadcastNotification(args: { title: string; body: string }) {
+  return (await api.post("/admin/notifications/broadcast", args)).data;
+}
+
+export async function personalNotification(args: {
+  client_id: string;
+  title: string;
+  body: string;
+}) {
+  return (await api.post("/admin/notifications/personal", args)).data;
+}
+
+export type AuditEntry = {
+  id: string;
+  actor_user_id: string | null;
+  actor_email: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  payload: Record<string, unknown> | null;
+  ip: string | null;
+  occurred_at: string;
+};
+
+export async function fetchAuditLog(action_prefix?: string): Promise<AuditEntry[]> {
+  return (await api.get<AuditEntry[]>("/admin/audit", {
+    params: action_prefix ? { action_prefix } : {},
+  })).data;
+}
