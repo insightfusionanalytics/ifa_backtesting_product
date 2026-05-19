@@ -125,7 +125,7 @@ def seed(db: Session) -> None:
     logger.info("Demo client login: {} / {}", DEMO_CLIENT_EMAIL, DEMO_CLIENT_PASSWORD)
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2].parent
+REPO_ROOT = Path(__file__).resolve().parents[2]  # ifa-backtest-product/
 SCHEMA_PATH = REPO_ROOT / "schemas" / "backtest.schema.json"
 EXAMPLE_PATH = REPO_ROOT / "schemas" / "backtest.example.json"
 

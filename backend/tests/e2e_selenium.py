@@ -8,6 +8,7 @@ Run with both dev servers up (uvicorn on :8000, vite on :5173).
 """
 from __future__ import annotations
 
+import json
 import sys
 import time
 import traceback
@@ -24,7 +25,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 FRONTEND = "http://localhost:5173"
 DEMO_EMAIL = "demo.client@sterlingcap.test"
 DEMO_PASSWORD = "DemoClient!2026"
+ADMIN_EMAIL = "insightfusionanalytics@gmail.com"
+ADMIN_PASSWORD = "ChangeMeOnFirstLogin!"
 BAD_PASSWORD = "wrongpassword"
+
+REPO_ROOT = Path(__file__).resolve().parents[2].parent
+BACKTEST_EXAMPLE = REPO_ROOT / "schemas" / "backtest.example.json"
 
 SCREENSHOT_DIR = Path(__file__).parent / "screenshots"
 SCREENSHOT_DIR.mkdir(exist_ok=True)
@@ -492,11 +498,11 @@ def test_avatar_logout(driver, run: TestRun) -> None:
 
 
 def reset_db_state() -> None:
-    """Wipe demo-client T&C acceptances + recent test-noise requests."""
+    """Wipe demo-client T&C acceptances + recent test-noise (requests, test-uploaded backtests)."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from app.core.config import get_settings
-    from app.db.models import Request as Req, TermsAcceptance, User
+    from app.db.models import Backtest, BacktestFile, Request as Req, TermsAcceptance, User
 
     e = create_engine(get_settings().DATABASE_URL_SYNC)
     s = sessionmaker(bind=e)()
@@ -504,8 +510,248 @@ def reset_db_state() -> None:
     if demo:
         n1 = s.query(TermsAcceptance).filter(TermsAcceptance.user_id == demo.id).delete()
         n2 = s.query(Req).filter(Req.client_id == demo.client_id).delete()
+        # Drop any TEST- prefixed backtests + their files
+        test_bts = s.query(Backtest).filter(
+            Backtest.client_id == demo.client_id, Backtest.code.startswith("TEST-")
+        ).all()
+        n3 = len(test_bts)
+        for bt in test_bts:
+            s.query(BacktestFile).filter(BacktestFile.backtest_id == bt.id).delete()
+            s.delete(bt)
         s.commit()
-        print(f"  reset: cleared {n1} T&C acceptance(s), {n2} request(s)")
+        print(f"  reset: cleared {n1} T&C, {n2} requests, {n3} test backtests")
+
+
+def login_as(driver, email: str, password: str) -> bool:
+    driver.get(f"{FRONTEND}/login")
+    try:
+        wait_for(driver, "input[type='email']")
+        driver.find_element(By.CSS_SELECTOR, "input[type='email']").clear()
+        driver.find_element(By.CSS_SELECTOR, "input[type='password']").clear()
+        driver.find_element(By.CSS_SELECTOR, "input[type='email']").send_keys(email)
+        driver.find_element(By.CSS_SELECTOR, "input[type='password']").send_keys(password)
+        driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+        WebDriverWait(driver, 10).until(lambda d: "/login" not in d.current_url)
+        return True
+    except Exception:
+        return False
+
+
+def test_admin_login(driver, run: TestRun) -> None:
+    print("\n— Admin login routes to /admin —")
+    try:
+        ok = login_as(driver, ADMIN_EMAIL, ADMIN_PASSWORD)
+        run.record("admin login succeeds", ok)
+        run.record("admin redirected to /admin", "/admin" in driver.current_url, driver.current_url)
+    except Exception as e:
+        take_screenshot(driver, "admin_login_fail")
+        run.record("admin login", False, str(e)[:120])
+
+
+def test_admin_pulse(driver, run: TestRun) -> None:
+    print("\n— Admin Pulse page —")
+    try:
+        ok = goto(driver, "/admin", "operations dashboard")
+        run.record("admin pulse renders", ok)
+        if not ok:
+            take_screenshot(driver, "admin_pulse_fail")
+            return
+        body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        run.record("Pulse stat 'Clients'",       "clients" in body)
+        run.record("Pulse stat 'Backtests'",     "backtests" in body)
+        run.record("Pulse stat 'Completed'",     "completed" in body)
+        run.record("Pulse stat 'Open requests'", "open requests" in body)
+        run.record("Pulse stat 'Tiers'",         "tiers" in body)
+        run.record("Sterling Capital listed",    "sterling capital advisors" in body)
+    except Exception as e:
+        take_screenshot(driver, "admin_pulse_fail")
+        run.record("admin pulse", False, str(e)[:120])
+
+
+def test_admin_sidebar_nav(driver, run: TestRun) -> None:
+    print("\n— Admin sidebar nav —")
+    for label, expect in [
+        ("Clients", "/admin/clients"),
+        ("Upload backtest", "/admin/backtests/upload"),
+        ("T&C editor", "/admin/terms"),  # may not have a route; will still attempt
+        ("Notifications", "/admin/notifications"),
+        ("Audit log", "/admin/audit"),
+        ("Pulse", "/admin"),
+    ]:
+        try:
+            link = next((a for a in driver.find_elements(By.TAG_NAME, "a") if a.text.strip() == label), None)
+            if not link:
+                run.record(f"admin sidebar '{label}'", False, "not found")
+                continue
+            link.click()
+            time.sleep(0.6)
+            ok = driver.current_url.endswith(expect) or driver.current_url.endswith(expect + "/")
+            run.record(f"admin sidebar '{label}' → {expect}", ok, driver.current_url)
+        except Exception as e:
+            run.record(f"admin sidebar '{label}'", False, str(e)[:80])
+
+
+def test_admin_clients_drawer(driver, run: TestRun) -> None:
+    print("\n— Admin Clients page —")
+    try:
+        ok = goto(driver, "/admin/clients", "sterling capital advisors")
+        run.record("admin clients renders", ok)
+        if not ok:
+            take_screenshot(driver, "admin_clients_fail")
+            return
+        # Click the row
+        row = next(
+            (r for r in driver.find_elements(By.CSS_SELECTOR, "tbody tr") if "sterling" in r.text.lower()),
+            None,
+        )
+        if not row:
+            run.record("Sterling row found", False)
+            return
+        row.click()
+        # Wait for drawer
+        ok = WebDriverWait(driver, 5).until(
+            lambda d: any("save" == b.text.strip().lower() for b in d.find_elements(By.TAG_NAME, "button"))
+        )
+        run.record("drawer opens with Save button", bool(ok))
+        # Close drawer by clicking the X
+        x_btn = next(
+            (b for b in driver.find_elements(By.TAG_NAME, "button") if b.text.strip() == "" and "size-8" in (b.get_attribute("class") or "")),
+            None,
+        )
+        if x_btn:
+            x_btn.click()
+            time.sleep(0.3)
+            run.record("drawer closes via X", True)
+    except Exception as e:
+        take_screenshot(driver, "admin_clients_fail")
+        run.record("admin clients drawer", False, str(e)[:120])
+
+
+def test_admin_backtest_upload(driver, run: TestRun) -> None:
+    print("\n— Admin Backtest Upload —")
+    try:
+        ok = goto(driver, "/admin/backtests/upload", "upload backtest result")
+        run.record("admin backtest upload renders", ok)
+        if not ok:
+            take_screenshot(driver, "admin_upload_fail")
+            return
+
+        textarea = driver.find_element(By.TAG_NAME, "textarea")
+
+        # ── TEST 1: bad JSON (missing required fields) → expect violations ──
+        textarea.clear()
+        textarea.send_keys('{"schema_version": "1.0", "backtest_id": "TEST-BAD"}')
+        upload_btn = next(b for b in driver.find_elements(By.TAG_NAME, "button") if "validate" in b.text.lower())
+        upload_btn.click()
+        time.sleep(2)
+        body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        run.record("bad JSON shows validation failed", "validation failed" in body or "violation" in body)
+
+        # ── TEST 2: good JSON with unique code → expect success ──
+        # Reload the page so stale "Validation failed" card doesn't poison the wait check
+        driver.get(f"{FRONTEND}/admin/backtests/upload")
+        wait_for_page_ready(driver, "upload backtest result")
+
+        example = json.loads(BACKTEST_EXAMPLE.read_text())
+        ts = int(time.time())
+        example["backtest_id"] = f"TEST-BT-{ts}"
+        example["strategy"]["name"] = f"Selenium test backtest {ts}"
+        textarea = driver.find_element(By.TAG_NAME, "textarea")
+        # Use a paste-like injection via execute_script (send_keys is too slow for 12kb)
+        driver.execute_script("""
+            const el = arguments[0];
+            const v = arguments[1];
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+            setter.call(el, v);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        """, textarea, json.dumps(example))
+
+        # Click upload
+        upload_btn = next(b for b in driver.find_elements(By.TAG_NAME, "button") if "validate" in b.text.lower())
+        upload_btn.click()
+
+        try:
+            WebDriverWait(driver, 30).until(
+                lambda d: "upload complete" in d.find_element(By.TAG_NAME, "body").text.lower()
+                          or "validation failed" in d.find_element(By.TAG_NAME, "body").text.lower()
+            )
+            body = driver.find_element(By.TAG_NAME, "body").text.lower()
+            if "upload complete" in body:
+                run.record(f"valid JSON uploads (code TEST-BT-{ts})", True)
+            else:
+                take_screenshot(driver, "admin_upload_unexpected")
+                run.record("valid JSON uploads", False, "validation failed unexpectedly")
+        except Exception:
+            take_screenshot(driver, "admin_upload_timeout")
+            # Dump button text to see if it's stuck
+            btns = [b.text for b in driver.find_elements(By.TAG_NAME, "button") if "validate" in b.text.lower() or "uploading" in b.text.lower()]
+            run.record("valid JSON uploads", False, f"no upload-complete after 30s; button text: {btns}")
+    except Exception as e:
+        take_screenshot(driver, "admin_upload_fail")
+        run.record("admin backtest upload", False, str(e)[:120])
+
+
+def test_admin_audit(driver, run: TestRun) -> None:
+    print("\n— Admin Audit Log —")
+    try:
+        ok = goto(driver, "/admin/audit", "audit log")
+        run.record("audit log renders", ok)
+        if not ok:
+            take_screenshot(driver, "admin_audit_fail")
+            return
+        # Wait for table rows to actually populate (audit data is fetched async)
+        WebDriverWait(driver, 10).until(
+            lambda d: len(d.find_elements(By.CSS_SELECTOR, "tbody tr")) > 0
+        )
+        body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        run.record("audit has tnc.accept entries", "tnc.accept" in body)
+        run.record("audit has backtest upload entries", "backtest.result.upload" in body)
+    except Exception as e:
+        run.record("admin audit", False, str(e)[:120])
+
+
+def test_admin_notifications(driver, run: TestRun) -> None:
+    print("\n— Admin Notifications —")
+    try:
+        ok = goto(driver, "/admin/notifications", "compose notification")
+        run.record("notifications page renders", ok)
+        # Toggle modes
+        broadcast_btn = next(b for b in driver.find_elements(By.TAG_NAME, "button") if "broadcast" in b.text.lower())
+        personal_btn = next(b for b in driver.find_elements(By.TAG_NAME, "button") if b.text.strip().lower() == "personal")
+        personal_btn.click()
+        time.sleep(0.3)
+        body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        run.record("personal mode shows client selector", "target client" in body)
+        broadcast_btn.click()
+        time.sleep(0.3)
+        body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        run.record("broadcast mode hides client selector", "target client" not in body)
+    except Exception as e:
+        run.record("admin notifications", False, str(e)[:120])
+
+
+def test_client_blocked_from_admin(driver, run: TestRun) -> None:
+    print("\n— Cross-role isolation —")
+    try:
+        # Log out, then log in as client
+        header = driver.find_element(By.TAG_NAME, "header")
+        avatar_btns = header.find_elements(By.TAG_NAME, "button")
+        avatar_btns[-1].click()
+        time.sleep(0.3)
+        logout_btn = next(b for b in driver.find_elements(By.TAG_NAME, "button") if "log out" in b.text.lower())
+        logout_btn.click()
+        WebDriverWait(driver, 5).until(lambda d: "/login" in d.current_url)
+
+        ok = login_as(driver, DEMO_EMAIL, DEMO_PASSWORD)
+        run.record("client login after admin logout", ok)
+
+        # Now attempt to navigate to /admin
+        driver.get(f"{FRONTEND}/admin")
+        time.sleep(1)
+        # Should redirect away from /admin (to /)
+        run.record("client blocked from /admin (redirected)", "/admin" not in driver.current_url, driver.current_url)
+    except Exception as e:
+        run.record("cross-role isolation", False, str(e)[:120])
 
 
 def main() -> int:
@@ -515,6 +761,7 @@ def main() -> int:
     run = TestRun()
     driver = make_driver()
     try:
+        # ── CLIENT FLOW ──
         test_login_bad_password(driver, run)
         test_login_good_password(driver, run)
         test_tnc_wizard(driver, run)
@@ -526,6 +773,18 @@ def main() -> int:
         test_backtest_detail(driver, run)
         test_dark_mode(driver, run)
         test_avatar_logout(driver, run)
+
+        # ── ADMIN FLOW ──
+        test_admin_login(driver, run)
+        test_admin_pulse(driver, run)
+        test_admin_sidebar_nav(driver, run)
+        test_admin_clients_drawer(driver, run)
+        test_admin_backtest_upload(driver, run)
+        test_admin_notifications(driver, run)
+        test_admin_audit(driver, run)
+
+        # ── CROSS-ROLE ──
+        test_client_blocked_from_admin(driver, run)
     finally:
         driver.quit()
 

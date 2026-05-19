@@ -15,6 +15,7 @@ import AdminClientsPage from "./features/admin/AdminClientsPage";
 import AdminBacktestUploadPage from "./features/admin/AdminBacktestUploadPage";
 import AdminNotificationsPage from "./features/admin/AdminNotificationsPage";
 import AdminAuditPage from "./features/admin/AdminAuditPage";
+import AdminTermsPage from "./features/admin/AdminTermsPage";
 import { auth } from "./lib/firebase";
 import { fetchMe } from "./lib/api";
 import { useAuth } from "./store/auth";
@@ -102,6 +103,7 @@ export default function App() {
           <Route index element={<AdminPulsePage />} />
           <Route path="clients" element={<AdminClientsPage />} />
           <Route path="backtests/upload" element={<AdminBacktestUploadPage />} />
+          <Route path="terms" element={<AdminTermsPage />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="audit" element={<AdminAuditPage />} />
         </Route>

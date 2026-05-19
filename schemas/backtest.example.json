@@ -1,0 +1,382 @@
+{
+  "schema_version": "1.0",
+  "result_type": "backtest",
+  "backtest_id": "BT-2026-0001",
+  "source_system": {
+    "name": "External Backtester X",
+    "version": "3.2.1",
+    "exported_at": "2026-05-18T15:00:00Z",
+    "exporter": "ifa-adapter-v1"
+  },
+
+  "client": {
+    "client_id": "C-014",
+    "client_name": "Sterling Capital Advisors"
+  },
+
+  "strategy": {
+    "name": "EMA 20/50 Crossover with RSI Confirmation",
+    "version": "v2",
+    "description": "Long-only trend-following on Nifty 50 constituents. Enter when EMA(20) crosses above EMA(50) AND RSI(14) > 50. Exit on opposite cross OR ATR(14)*2 trailing stop.",
+    "type": "long_only",
+    "instrument_type": "equity",
+    "tags": ["momentum", "trend-following", "intraday-close"]
+  },
+
+  "universe": {
+    "name": "Nifty 50 constituents (T-1)",
+    "symbols": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
+    "rebalance": "monthly",
+    "market_data_provider": {
+      "name": "Global Data Feeds",
+      "code": "GDF",
+      "feed_type": "EOD",
+      "region": "IN"
+    },
+    "brokerage": {
+      "name": "Fyers",
+      "account_type": "discount",
+      "country": "IN"
+    }
+  },
+
+  "filters": [
+    {
+      "name": "symbol",
+      "type": "categorical",
+      "values": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
+      "active_for_entry": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
+      "description": "Tradable symbols"
+    },
+    {
+      "name": "trend",
+      "type": "categorical",
+      "values": ["uptrend", "sideways", "downtrend"],
+      "active_for_entry": ["uptrend"],
+      "rule": "price > EMA(200) → uptrend; |price - EMA(200)| < 1% → sideways; else downtrend",
+      "description": "200-EMA macro trend filter"
+    },
+    {
+      "name": "rsi_zone",
+      "type": "categorical",
+      "values": ["oversold", "neutral", "overbought"],
+      "active_for_entry": ["neutral"],
+      "rule": "RSI(14) < 30 → oversold; 30..70 → neutral; > 70 → overbought",
+      "description": "Avoid extremes"
+    },
+    {
+      "name": "bb_position",
+      "type": "categorical",
+      "values": ["lower_band", "middle", "upper_band"],
+      "active_for_entry": ["middle", "lower_band"],
+      "rule": "Bollinger(20, 2σ); price relative to bands",
+      "description": "Don't chase upper band"
+    },
+    {
+      "name": "day_of_week",
+      "type": "categorical",
+      "values": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      "active_for_entry": ["Mon", "Tue", "Wed", "Thu"],
+      "description": "Skip Friday entries"
+    },
+    {
+      "name": "month",
+      "type": "categorical",
+      "values": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      "active_for_entry": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      "description": "No seasonality filter"
+    },
+    {
+      "name": "volume_ratio_20d",
+      "type": "numerical",
+      "min": 0.8,
+      "max": 5.0,
+      "active_for_entry_min": 1.0,
+      "active_for_entry_max": 3.0,
+      "description": "Volume / 20d avg volume. Avoid extreme spikes."
+    }
+  ],
+
+  "indicators": [
+    { "name": "ema_20", "type": "EMA", "params": { "period": 20, "source": "close" } },
+    { "name": "ema_50", "type": "EMA", "params": { "period": 50, "source": "close" } },
+    { "name": "ema_200", "type": "EMA", "params": { "period": 200, "source": "close" } },
+    { "name": "rsi_14", "type": "RSI", "params": { "period": 14, "source": "close" } },
+    { "name": "atr_14", "type": "ATR", "params": { "period": 14 } },
+    { "name": "bollinger_20", "type": "BBANDS", "params": { "period": 20, "std_dev": 2.0, "source": "close" } }
+  ],
+
+  "rules": {
+    "entry_long": "ema_20 crosses_above ema_50 AND rsi_14 > 50 AND filters.trend == 'uptrend'",
+    "exit_long": "ema_20 crosses_below ema_50 OR price < entry_price - atr_14 * 2.0",
+    "entry_short": null,
+    "exit_short": null,
+    "sizing": "8% of portfolio notional per position, max 12 concurrent",
+    "stop_loss": "ATR(14) * 2.0 trailing from highest close since entry",
+    "take_profit": null,
+    "time_stop": null
+  },
+
+  "benchmarks": [
+    { "name": "Nifty 50 TR",  "code": "NIFTY50.TR", "currency": "INR" },
+    { "name": "S&P 500",      "code": "SPX",        "currency": "USD" },
+    { "name": "Bitcoin USD",  "code": "BTC-USD",    "currency": "USD" }
+  ],
+
+  "assumptions": {
+    "date_range": { "from": "2023-05-01", "to": "2025-04-30" },
+    "initial_capital": { "amount": 10000000, "currency": "INR" },
+    "timeframe": "1D",
+    "session": "regular",
+    "execution": "next_open",
+    "fills": "perfect",
+    "shorting_allowed": false,
+    "brokerage": { "type": "percentage", "value_bps": 3.0, "applies_to": "both_sides" },
+    "slippage":  { "type": "percentage", "value_bps": 5.0, "applies_to": "both_sides" },
+    "taxes":     { "stt_bps": 10, "applies_to": "sell_side" },
+    "position_sizing": {
+      "method": "percent_notional",
+      "value": 0.08,
+      "max_concurrent_positions": 12,
+      "min_position_value": 50000
+    },
+    "leverage": 1.0,
+    "margin_assumptions": {
+      "initial_margin_pct": 100.0,
+      "maintenance_margin_pct": 100.0
+    },
+    "rebalancing": "none",
+    "data_source": "NSE EOD + corporate actions",
+    "corporate_actions_handling": "adjusted",
+    "currency": "INR",
+    "warmup_bars": 200
+  },
+
+  "metrics": {
+    "summary": {
+      "total_return_pct": 31.4,
+      "cagr_pct": 14.2,
+      "sharpe": 1.31,
+      "sortino": 1.84,
+      "max_drawdown_pct": -18.2,
+      "max_drawdown_duration_days": 124,
+      "max_drawdown_peak_date": "2024-07-08",
+      "max_drawdown_trough_date": "2024-09-12",
+      "profit_factor": 1.62,
+      "expectancy_pct": 0.67,
+      "win_rate_pct": 52.3,
+      "loss_rate_pct": 47.7,
+      "n_trades": 472,
+      "n_winners": 247,
+      "n_losers": 225,
+      "n_breakeven": 0,
+      "avg_trade_pct": 0.67,
+      "avg_winner_pct": 2.31,
+      "avg_loser_pct": -1.45,
+      "best_trade_pct": 5.09,
+      "worst_trade_pct": -2.77,
+      "largest_winner_amount": 586300.0,
+      "largest_loser_amount": -370278.0,
+      "avg_holding_days": 18.4,
+      "avg_winner_holding_days": 22.1,
+      "avg_loser_holding_days": 13.8,
+      "exposure_time_pct": 68.0,
+      "kelly_pct": 8.7,
+      "calmar": 0.78,
+      "ulcer_index": 4.21,
+      "recovery_factor": 1.72,
+      "payoff_ratio": 1.59
+    },
+    "risk": {
+      "volatility_pct_annualised": 12.4,
+      "downside_deviation_pct": 7.8,
+      "var_95_pct": -1.8,
+      "cvar_95_pct": -2.6,
+      "beta_vs_benchmark": 0.92,
+      "alpha_pct_annualised": 4.2,
+      "correlation_to_benchmark": 0.74,
+      "tracking_error_pct": 6.1,
+      "information_ratio": 0.69
+    },
+    "periodic_returns": {
+      "monthly": [
+        { "period": "2023-05", "return_pct":  1.20 },
+        { "period": "2023-06", "return_pct":  2.40 },
+        { "period": "2023-07", "return_pct": -0.80 },
+        { "period": "2023-08", "return_pct":  3.10 }
+      ],
+      "yearly": [
+        { "period": "2023", "return_pct": 12.4 },
+        { "period": "2024", "return_pct": 14.8 },
+        { "period": "2025", "return_pct":  3.1 }
+      ]
+    },
+    "rolling": {
+      "rolling_sharpe_30d":     [{ "date": "2023-06-15", "value": 1.21 }],
+      "rolling_volatility_30d": [{ "date": "2023-06-15", "value": 0.118 }],
+      "rolling_correlation_30d":[{ "date": "2023-06-15", "value": 0.78 }]
+    }
+  },
+
+  "time_series": {
+    "equity_curve": [
+      { "date": "2023-05-01", "nav": 100.00, "cash": 100.00, "positions_value": 0.00 },
+      { "date": "2023-06-01", "nav": 101.20, "cash":  60.00, "positions_value": 41.20 },
+      { "date": "2025-04-30", "nav": 131.40, "cash":  45.00, "positions_value": 86.40 }
+    ],
+    "drawdown_curve": [
+      { "date": "2023-05-01", "drawdown_pct":  0.00, "underwater": false },
+      { "date": "2024-09-12", "drawdown_pct": -18.20, "underwater": true }
+    ],
+    "benchmark_curves": [
+      { "name": "Nifty 50 TR", "series": [
+        { "date": "2023-05-01", "value": 100.00 },
+        { "date": "2025-04-30", "value": 118.60 }
+      ]}
+    ],
+    "exposure_curve": [
+      { "date": "2023-05-01", "long_exposure_pct":  0.0, "short_exposure_pct": 0.0, "net_exposure_pct":  0.0, "n_positions":  0 },
+      { "date": "2024-11-14", "long_exposure_pct": 84.0, "short_exposure_pct": 0.0, "net_exposure_pct": 84.0, "n_positions": 11 }
+    ]
+  },
+
+  "trades": [
+    {
+      "id": "T-0421",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2024-11-14T09:30:00+05:30",
+        "price": 23104.20,
+        "quantity": 540,
+        "value": 12476268.00,
+        "fees": 374.29,
+        "slippage_bps": 5.0,
+        "reason": "EMA(20) crossed above EMA(50); RSI(14)=58.2",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2024-12-03T15:45:00+05:30",
+        "price": 24018.55,
+        "quantity": 540,
+        "value": 12970017.00,
+        "fees": 389.10,
+        "slippage_bps": 5.0,
+        "reason": "ATR(14)*2 trailing stop hit",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross":          493749.00,
+        "fees_total":        763.39,
+        "slippage_total":   1233.92,
+        "taxes_total":      1297.00,
+        "net":            490454.69,
+        "pct":               3.94,
+        "r_multiple":        1.32
+      },
+      "holding": {
+        "bars":           14,
+        "calendar_days":  19,
+        "trading_days":   14
+      },
+      "filters_at_entry": {
+        "symbol":       "RELIANCE.NS",
+        "trend":        "uptrend",
+        "rsi_zone":     "neutral",
+        "bb_position":  "middle",
+        "day_of_week":  "Thu",
+        "month":        "Nov",
+        "session":      "regular",
+        "volume_ratio_20d": 1.15
+      },
+      "indicators_at_entry": {
+        "rsi_14":  58.2,
+        "ema_20":  22850.10,
+        "ema_50":  22310.55,
+        "ema_200": 21945.20,
+        "atr_14":  245.30,
+        "bb_upper":23420.50,
+        "bb_lower":22680.10
+      },
+      "mae_pct": -1.20,
+      "mfe_pct":  4.15,
+      "tags":    ["high_conviction"],
+      "notes":   ""
+    },
+    {
+      "id": "T-0420",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2024-10-22T09:30:00+05:30",
+        "price": 24788.10,
+        "quantity": 540,
+        "value": 13385574.00,
+        "fees": 401.57,
+        "slippage_bps": 5.0,
+        "reason": "EMA crossover",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2024-11-08T15:45:00+05:30",
+        "price": 24102.40,
+        "quantity": 540,
+        "value": 13015296.00,
+        "fees": 390.46,
+        "slippage_bps": 5.0,
+        "reason": "Opposite EMA cross",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross":         -370278.00,
+        "fees_total":        792.03,
+        "slippage_total":  1320.04,
+        "taxes_total":     1302.00,
+        "net":           -373692.07,
+        "pct":              -2.77,
+        "r_multiple":       -0.93
+      },
+      "holding": {
+        "bars": 13,
+        "calendar_days": 17,
+        "trading_days": 13
+      },
+      "filters_at_entry": {
+        "symbol":       "HDFCBANK.NS",
+        "trend":        "uptrend",
+        "rsi_zone":     "neutral",
+        "bb_position":  "upper_band",
+        "day_of_week":  "Tue",
+        "month":        "Oct",
+        "session":      "regular",
+        "volume_ratio_20d": 1.04
+      },
+      "indicators_at_entry": {
+        "rsi_14":  62.4,
+        "ema_20":  24102.10,
+        "ema_50":  23998.55
+      },
+      "mae_pct": -3.20,
+      "mfe_pct":  0.85,
+      "tags":    [],
+      "notes":   ""
+    }
+  ],
+
+  "disclaimer": "Past performance is not indicative of future results. Backtests are based on assumptions and historical data; live execution may differ materially. Content provided is not investment advice.",
+
+  "extras": {
+    "custom_metrics": {
+      "avg_position_size_pct_of_portfolio": 8.1,
+      "median_winner_pct": 1.96,
+      "median_loser_pct": -1.32
+    },
+    "notes": "Run on adjusted prices with corporate actions handled at source.",
+    "links": [
+      { "label": "Strategy document",       "url": "https://..." },
+      { "label": "Original backtest log",   "url": "https://..." }
+    ]
+  }
+}

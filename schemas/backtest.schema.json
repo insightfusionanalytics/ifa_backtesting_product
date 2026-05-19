@@ -1,0 +1,517 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insightfusionanalytics.com/schemas/backtest/v1.0.json",
+  "title": "IFA Backtest Result",
+  "description": "Schema for ingesting a completed backtest into the IFA Backtest Engine Dashboard from any external system.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "result_type",
+    "backtest_id",
+    "strategy",
+    "assumptions",
+    "metrics",
+    "time_series",
+    "trades"
+  ],
+  "additionalProperties": false,
+
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Pinned for forward-compat. Bump when breaking changes ship."
+    },
+
+    "result_type": {
+      "enum": ["scanner", "backtest", "live"],
+      "description": "Kind of result. 'scanner' = screener output (signals/picks, no trades). 'backtest' = historical simulation. 'live' = realised live-trading results. Backtest is the only mode fully formalised in v1.0; scanner and live relax `trades`, `time_series.equity_curve`, and required metric fields."
+    },
+
+    "backtest_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{3,64}$",
+      "description": "Unique id within source system, e.g. BT-2026-0001."
+    },
+
+    "source_system": {
+      "type": "object",
+      "properties": {
+        "name":        { "type": "string" },
+        "version":     { "type": "string" },
+        "exported_at": { "type": "string", "format": "date-time" },
+        "exporter":    { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "client": {
+      "type": "object",
+      "properties": {
+        "client_id":   { "type": "string" },
+        "client_name": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "strategy": {
+      "type": "object",
+      "required": ["name", "version", "type"],
+      "properties": {
+        "name":            { "type": "string", "minLength": 1 },
+        "version":         { "type": "string" },
+        "description":     { "type": "string" },
+        "type":            { "enum": ["long_only", "long_short", "short_only", "market_neutral", "pairs"] },
+        "instrument_type": { "enum": ["equity", "futures", "options", "currency", "crypto", "mixed"] },
+        "tags":            { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+
+    "universe": {
+      "type": "object",
+      "properties": {
+        "name":      { "type": "string" },
+        "symbols":   { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "rebalance": { "enum": ["none", "daily", "weekly", "monthly", "quarterly"] },
+        "market_data_provider": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name":      { "type": "string", "description": "e.g. 'Global Data Feeds', 'NSE EOD', 'Polygon', 'Refinitiv'" },
+            "code":      { "type": "string" },
+            "feed_type": { "enum": ["EOD", "tick", "1m", "5m", "15m", "1H", "1D"] },
+            "region":    { "type": "string", "description": "ISO 3166-1 alpha-2, e.g. 'IN', 'US'" }
+          },
+          "additionalProperties": false
+        },
+        "brokerage": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name":         { "type": "string", "description": "e.g. 'Fyers', 'Zerodha', 'Interactive Brokers'" },
+            "account_type": { "type": "string", "description": "'discount', 'full_service', 'prop', ..." },
+            "country":      { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "filters": {
+      "type": "array",
+      "description": "Strategy conditions (categorical or numerical) used at signal time. Powers post-hoc analytics.",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name":        { "type": "string" },
+          "type":        { "enum": ["categorical", "numerical", "boolean"] },
+          "values":      { "type": "array" },
+          "active_for_entry":     { "type": "array" },
+          "active_for_entry_min": { "type": "number" },
+          "active_for_entry_max": { "type": "number" },
+          "min":         { "type": "number" },
+          "max":         { "type": "number" },
+          "rule":        { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "indicators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name":   { "type": "string" },
+          "type":   { "type": "string", "description": "EMA, SMA, RSI, ATR, MACD, BBANDS, ADX, OBV, custom..." },
+          "params": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "rules": {
+      "type": "object",
+      "properties": {
+        "entry_long":  { "type": ["string", "null"] },
+        "exit_long":   { "type": ["string", "null"] },
+        "entry_short": { "type": ["string", "null"] },
+        "exit_short":  { "type": ["string", "null"] },
+        "sizing":      { "type": ["string", "null"] },
+        "stop_loss":   { "type": ["string", "null"] },
+        "take_profit": { "type": ["string", "null"] },
+        "time_stop":   { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+
+    "benchmarks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name":     { "type": "string" },
+          "code":     { "type": "string" },
+          "currency": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "assumptions": {
+      "type": "object",
+      "required": ["date_range", "initial_capital", "timeframe"],
+      "properties": {
+        "date_range": {
+          "type": "object",
+          "required": ["from", "to"],
+          "properties": {
+            "from": { "type": "string", "format": "date" },
+            "to":   { "type": "string", "format": "date" }
+          },
+          "additionalProperties": false
+        },
+        "initial_capital": {
+          "type": "object",
+          "required": ["amount", "currency"],
+          "properties": {
+            "amount":   { "type": "number", "exclusiveMinimum": 0 },
+            "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+          },
+          "additionalProperties": false
+        },
+        "timeframe":   { "enum": ["1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"] },
+        "session":     { "enum": ["regular", "extended", "24h"] },
+        "execution":   { "enum": ["close_to_close", "next_open", "intrabar", "signal_close"] },
+        "fills":       { "enum": ["perfect", "partial", "market_impact"] },
+        "shorting_allowed": { "type": "boolean" },
+        "brokerage": {
+          "type": "object",
+          "properties": {
+            "type":       { "enum": ["flat", "percentage"] },
+            "value_bps":  { "type": "number", "minimum": 0 },
+            "value_flat": { "type": "number", "minimum": 0 },
+            "applies_to": { "enum": ["entry", "exit", "both_sides"] }
+          },
+          "additionalProperties": false
+        },
+        "slippage": {
+          "type": "object",
+          "properties": {
+            "type":       { "enum": ["flat", "percentage"] },
+            "value_bps":  { "type": "number", "minimum": 0 },
+            "applies_to": { "enum": ["entry", "exit", "both_sides"] }
+          },
+          "additionalProperties": false
+        },
+        "taxes": {
+          "type": "object",
+          "properties": {
+            "stt_bps":    { "type": "number", "minimum": 0 },
+            "applies_to": { "enum": ["buy_side", "sell_side", "both_sides"] }
+          },
+          "additionalProperties": false
+        },
+        "position_sizing": {
+          "type": "object",
+          "required": ["method"],
+          "properties": {
+            "method":                   { "enum": ["fixed_amount", "fixed_qty", "percent_notional", "percent_risk", "kelly", "volatility_target"] },
+            "value":                    { "type": "number" },
+            "max_concurrent_positions": { "type": "integer", "minimum": 1 },
+            "min_position_value":       { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "leverage":                    { "type": "number", "minimum": 0 },
+        "margin_assumptions":          { "type": "object", "additionalProperties": true },
+        "rebalancing":                 { "enum": ["none", "daily", "weekly", "monthly", "quarterly"] },
+        "data_source":                 { "type": "string" },
+        "corporate_actions_handling":  { "enum": ["raw", "adjusted", "split_adjusted_only"] },
+        "currency":                    { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "warmup_bars":                 { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "metrics": {
+      "type": "object",
+      "required": ["summary"],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "required": [
+            "total_return_pct", "cagr_pct", "sharpe", "max_drawdown_pct",
+            "win_rate_pct", "n_trades", "profit_factor"
+          ],
+          "properties": {
+            "total_return_pct":                { "type": "number" },
+            "cagr_pct":                        { "type": "number" },
+            "sharpe":                          { "type": "number" },
+            "sortino":                         { "type": "number" },
+            "max_drawdown_pct":                { "type": "number" },
+            "max_drawdown_duration_days":      { "type": "integer", "minimum": 0 },
+            "max_drawdown_peak_date":          { "type": "string", "format": "date" },
+            "max_drawdown_trough_date":        { "type": "string", "format": "date" },
+            "profit_factor":                   { "type": "number" },
+            "expectancy_pct":                  { "type": "number" },
+            "win_rate_pct":                    { "type": "number", "minimum": 0, "maximum": 100 },
+            "loss_rate_pct":                   { "type": "number", "minimum": 0, "maximum": 100 },
+            "n_trades":                        { "type": "integer", "minimum": 0 },
+            "n_winners":                       { "type": "integer", "minimum": 0 },
+            "n_losers":                        { "type": "integer", "minimum": 0 },
+            "n_breakeven":                     { "type": "integer", "minimum": 0 },
+            "avg_trade_pct":                   { "type": "number" },
+            "avg_winner_pct":                  { "type": "number" },
+            "avg_loser_pct":                   { "type": "number" },
+            "best_trade_pct":                  { "type": "number" },
+            "worst_trade_pct":                 { "type": "number" },
+            "largest_winner_amount":           { "type": "number" },
+            "largest_loser_amount":            { "type": "number" },
+            "avg_holding_days":                { "type": "number", "minimum": 0 },
+            "avg_winner_holding_days":         { "type": "number", "minimum": 0 },
+            "avg_loser_holding_days":          { "type": "number", "minimum": 0 },
+            "exposure_time_pct":               { "type": "number", "minimum": 0, "maximum": 100 },
+            "kelly_pct":                       { "type": "number" },
+            "calmar":                          { "type": "number" },
+            "ulcer_index":                     { "type": "number" },
+            "recovery_factor":                 { "type": "number" },
+            "payoff_ratio":                    { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "risk": {
+          "type": "object",
+          "properties": {
+            "volatility_pct_annualised":  { "type": "number" },
+            "downside_deviation_pct":     { "type": "number" },
+            "var_95_pct":                 { "type": "number" },
+            "cvar_95_pct":                { "type": "number" },
+            "beta_vs_benchmark":          { "type": "number" },
+            "alpha_pct_annualised":       { "type": "number" },
+            "correlation_to_benchmark":   { "type": "number" },
+            "tracking_error_pct":         { "type": "number" },
+            "information_ratio":          { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "periodic_returns": {
+          "type": "object",
+          "properties": {
+            "monthly":   { "type": "array", "items": { "$ref": "#/$defs/period_return" } },
+            "yearly":    { "type": "array", "items": { "$ref": "#/$defs/period_return" } },
+            "quarterly": { "type": "array", "items": { "$ref": "#/$defs/period_return" } }
+          },
+          "additionalProperties": false
+        },
+        "rolling": {
+          "type": "object",
+          "properties": {
+            "rolling_sharpe_30d":      { "type": "array", "items": { "$ref": "#/$defs/dated_value" } },
+            "rolling_volatility_30d":  { "type": "array", "items": { "$ref": "#/$defs/dated_value" } },
+            "rolling_correlation_30d": { "type": "array", "items": { "$ref": "#/$defs/dated_value" } }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "time_series": {
+      "type": "object",
+      "required": ["equity_curve", "drawdown_curve"],
+      "properties": {
+        "equity_curve": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["date", "nav"],
+            "properties": {
+              "date":            { "type": "string", "format": "date" },
+              "nav":             { "type": "number", "description": "Normalised to 100 at start" },
+              "cash":            { "type": "number" },
+              "positions_value": { "type": "number" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "drawdown_curve": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date", "drawdown_pct"],
+            "properties": {
+              "date":         { "type": "string", "format": "date" },
+              "drawdown_pct": { "type": "number", "maximum": 0 },
+              "underwater":   { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "benchmark_curves": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "series"],
+            "properties": {
+              "name":   { "type": "string" },
+              "series": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/dated_value" }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "exposure_curve": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date"],
+            "properties": {
+              "date":                 { "type": "string", "format": "date" },
+              "long_exposure_pct":    { "type": "number" },
+              "short_exposure_pct":   { "type": "number" },
+              "net_exposure_pct":     { "type": "number" },
+              "n_positions":          { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "trades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "symbol", "side", "entry", "exit", "pnl"],
+        "properties": {
+          "id":              { "type": "string" },
+          "symbol":          { "type": "string" },
+          "instrument_type": { "enum": ["equity", "futures", "options", "currency", "crypto"] },
+          "side":            { "enum": ["long", "short"] },
+
+          "entry": {
+            "type": "object",
+            "required": ["timestamp", "price", "quantity"],
+            "properties": {
+              "timestamp":     { "type": "string", "format": "date-time" },
+              "price":         { "type": "number", "exclusiveMinimum": 0 },
+              "quantity":      { "type": "number", "exclusiveMinimum": 0 },
+              "value":         { "type": "number" },
+              "fees":          { "type": "number", "minimum": 0 },
+              "slippage_bps":  { "type": "number", "minimum": 0 },
+              "reason":        { "type": "string" },
+              "signal_type":   { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+
+          "exit": {
+            "type": "object",
+            "required": ["timestamp", "price"],
+            "properties": {
+              "timestamp":     { "type": "string", "format": "date-time" },
+              "price":         { "type": "number", "exclusiveMinimum": 0 },
+              "quantity":      { "type": "number" },
+              "value":         { "type": "number" },
+              "fees":          { "type": "number", "minimum": 0 },
+              "slippage_bps":  { "type": "number", "minimum": 0 },
+              "reason":        { "type": "string" },
+              "signal_type":   { "enum": ["exit_signal", "stop_loss", "take_profit", "trailing_stop", "time_stop", "session_close", "margin_call", "manual"] }
+            },
+            "additionalProperties": false
+          },
+
+          "pnl": {
+            "type": "object",
+            "required": ["net", "pct"],
+            "properties": {
+              "gross":          { "type": "number" },
+              "fees_total":     { "type": "number" },
+              "slippage_total": { "type": "number" },
+              "taxes_total":    { "type": "number" },
+              "net":            { "type": "number" },
+              "pct":            { "type": "number" },
+              "r_multiple":     { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+
+          "holding": {
+            "type": "object",
+            "properties": {
+              "bars":          { "type": "integer", "minimum": 0 },
+              "calendar_days": { "type": "number", "minimum": 0 },
+              "trading_days":  { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          },
+
+          "filters_at_entry":    { "type": "object", "additionalProperties": true },
+          "indicators_at_entry": { "type": "object", "additionalProperties": true },
+
+          "mae_pct": { "type": "number", "description": "Max adverse excursion %" },
+          "mfe_pct": { "type": "number", "description": "Max favorable excursion %" },
+
+          "tags":  { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "disclaimer": { "type": "string" },
+
+    "extras": {
+      "type": "object",
+      "properties": {
+        "custom_metrics": { "type": "object", "additionalProperties": true },
+        "notes":          { "type": "string" },
+        "links":          {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "url"],
+            "properties": {
+              "label": { "type": "string" },
+              "url":   { "type": "string", "format": "uri" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+
+  "$defs": {
+    "period_return": {
+      "type": "object",
+      "required": ["period", "return_pct"],
+      "properties": {
+        "period":     { "type": "string", "description": "YYYY-MM or YYYY-QN or YYYY" },
+        "return_pct": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "dated_value": {
+      "type": "object",
+      "required": ["date", "value"],
+      "properties": {
+        "date":  { "type": "string", "format": "date" },
+        "value": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
