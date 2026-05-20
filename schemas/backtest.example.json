@@ -8,375 +8,7168 @@
     "exported_at": "2026-05-18T15:00:00Z",
     "exporter": "ifa-adapter-v1"
   },
-
-  "client": {
-    "client_id": "C-014",
-    "client_name": "Sterling Capital Advisors"
-  },
-
   "strategy": {
     "name": "EMA 20/50 Crossover with RSI Confirmation",
-    "version": "v2",
+    "version": "v1",
     "description": "Long-only trend-following on Nifty 50 constituents. Enter when EMA(20) crosses above EMA(50) AND RSI(14) > 50. Exit on opposite cross OR ATR(14)*2 trailing stop.",
     "type": "long_only",
     "instrument_type": "equity",
-    "tags": ["momentum", "trend-following", "intraday-close"]
+    "tags": [
+      "momentum",
+      "trend-following",
+      "intraday-close"
+    ]
   },
-
   "universe": {
-    "name": "Nifty 50 constituents (T-1)",
-    "symbols": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
+    "name": "equity universe (5 symbols)",
+    "symbols": [
+      "RELIANCE.NS",
+      "TCS.NS",
+      "INFY.NS",
+      "HDFCBANK.NS",
+      "ICICIBANK.NS"
+    ],
     "rebalance": "monthly",
     "market_data_provider": {
-      "name": "Global Data Feeds",
-      "code": "GDF",
-      "feed_type": "EOD",
-      "region": "IN"
+      "name": "Synthetic",
+      "code": "SYN",
+      "feed_type": "EOD"
     },
     "brokerage": {
-      "name": "Fyers",
+      "name": "TestBroker",
       "account_type": "discount",
       "country": "IN"
     }
   },
-
-  "filters": [
-    {
-      "name": "symbol",
-      "type": "categorical",
-      "values": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
-      "active_for_entry": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
-      "description": "Tradable symbols"
-    },
-    {
-      "name": "trend",
-      "type": "categorical",
-      "values": ["uptrend", "sideways", "downtrend"],
-      "active_for_entry": ["uptrend"],
-      "rule": "price > EMA(200) → uptrend; |price - EMA(200)| < 1% → sideways; else downtrend",
-      "description": "200-EMA macro trend filter"
-    },
-    {
-      "name": "rsi_zone",
-      "type": "categorical",
-      "values": ["oversold", "neutral", "overbought"],
-      "active_for_entry": ["neutral"],
-      "rule": "RSI(14) < 30 → oversold; 30..70 → neutral; > 70 → overbought",
-      "description": "Avoid extremes"
-    },
-    {
-      "name": "bb_position",
-      "type": "categorical",
-      "values": ["lower_band", "middle", "upper_band"],
-      "active_for_entry": ["middle", "lower_band"],
-      "rule": "Bollinger(20, 2σ); price relative to bands",
-      "description": "Don't chase upper band"
-    },
-    {
-      "name": "day_of_week",
-      "type": "categorical",
-      "values": ["Mon", "Tue", "Wed", "Thu", "Fri"],
-      "active_for_entry": ["Mon", "Tue", "Wed", "Thu"],
-      "description": "Skip Friday entries"
-    },
-    {
-      "name": "month",
-      "type": "categorical",
-      "values": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-      "active_for_entry": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-      "description": "No seasonality filter"
-    },
-    {
-      "name": "volume_ratio_20d",
-      "type": "numerical",
-      "min": 0.8,
-      "max": 5.0,
-      "active_for_entry_min": 1.0,
-      "active_for_entry_max": 3.0,
-      "description": "Volume / 20d avg volume. Avoid extreme spikes."
-    }
-  ],
-
-  "indicators": [
-    { "name": "ema_20", "type": "EMA", "params": { "period": 20, "source": "close" } },
-    { "name": "ema_50", "type": "EMA", "params": { "period": 50, "source": "close" } },
-    { "name": "ema_200", "type": "EMA", "params": { "period": 200, "source": "close" } },
-    { "name": "rsi_14", "type": "RSI", "params": { "period": 14, "source": "close" } },
-    { "name": "atr_14", "type": "ATR", "params": { "period": 14 } },
-    { "name": "bollinger_20", "type": "BBANDS", "params": { "period": 20, "std_dev": 2.0, "source": "close" } }
-  ],
-
-  "rules": {
-    "entry_long": "ema_20 crosses_above ema_50 AND rsi_14 > 50 AND filters.trend == 'uptrend'",
-    "exit_long": "ema_20 crosses_below ema_50 OR price < entry_price - atr_14 * 2.0",
-    "entry_short": null,
-    "exit_short": null,
-    "sizing": "8% of portfolio notional per position, max 12 concurrent",
-    "stop_loss": "ATR(14) * 2.0 trailing from highest close since entry",
-    "take_profit": null,
-    "time_stop": null
-  },
-
-  "benchmarks": [
-    { "name": "Nifty 50 TR",  "code": "NIFTY50.TR", "currency": "INR" },
-    { "name": "S&P 500",      "code": "SPX",        "currency": "USD" },
-    { "name": "Bitcoin USD",  "code": "BTC-USD",    "currency": "USD" }
-  ],
-
   "assumptions": {
-    "date_range": { "from": "2023-05-01", "to": "2025-04-30" },
-    "initial_capital": { "amount": 10000000, "currency": "INR" },
+    "date_range": {
+      "from": "2025-07-02",
+      "to": "2025-12-31"
+    },
+    "initial_capital": {
+      "amount": 10000000,
+      "currency": "INR"
+    },
     "timeframe": "1D",
     "session": "regular",
-    "execution": "next_open",
-    "fills": "perfect",
+    "execution": "signal_close",
+    "fills": "partial",
     "shorting_allowed": false,
-    "brokerage": { "type": "percentage", "value_bps": 3.0, "applies_to": "both_sides" },
-    "slippage":  { "type": "percentage", "value_bps": 5.0, "applies_to": "both_sides" },
-    "taxes":     { "stt_bps": 10, "applies_to": "sell_side" },
+    "brokerage": {
+      "type": "percentage",
+      "value_bps": 3.0,
+      "applies_to": "both_sides"
+    },
+    "slippage": {
+      "type": "percentage",
+      "value_bps": 5.0,
+      "applies_to": "both_sides"
+    },
     "position_sizing": {
-      "method": "percent_notional",
-      "value": 0.08,
-      "max_concurrent_positions": 12,
-      "min_position_value": 50000
+      "method": "percent_risk",
+      "value": 0.05,
+      "max_concurrent_positions": 10
     },
     "leverage": 1.0,
-    "margin_assumptions": {
-      "initial_margin_pct": 100.0,
-      "maintenance_margin_pct": 100.0
-    },
     "rebalancing": "none",
-    "data_source": "NSE EOD + corporate actions",
-    "corporate_actions_handling": "adjusted",
+    "data_source": "Synthetic test data",
     "currency": "INR",
     "warmup_bars": 200
   },
-
   "metrics": {
     "summary": {
-      "total_return_pct": 31.4,
-      "cagr_pct": 14.2,
-      "sharpe": 1.31,
-      "sortino": 1.84,
-      "max_drawdown_pct": -18.2,
-      "max_drawdown_duration_days": 124,
-      "max_drawdown_peak_date": "2024-07-08",
-      "max_drawdown_trough_date": "2024-09-12",
-      "profit_factor": 1.62,
-      "expectancy_pct": 0.67,
-      "win_rate_pct": 52.3,
-      "loss_rate_pct": 47.7,
-      "n_trades": 472,
-      "n_winners": 247,
-      "n_losers": 225,
+      "total_return_pct": -0.1565,
+      "cagr_pct": -0.3138,
+      "sharpe": -1.4255,
+      "sortino": -0.3274,
+      "max_drawdown_pct": -0.2379,
+      "max_drawdown_peak_date": "2025-07-02",
+      "max_drawdown_trough_date": "2025-10-09",
+      "profit_factor": 0.3653,
+      "expectancy_pct": 0.5719,
+      "win_rate_pct": 58.0,
+      "loss_rate_pct": 42.0,
+      "n_trades": 100,
+      "n_winners": 58,
+      "n_losers": 42,
       "n_breakeven": 0,
-      "avg_trade_pct": 0.67,
-      "avg_winner_pct": 2.31,
-      "avg_loser_pct": -1.45,
-      "best_trade_pct": 5.09,
-      "worst_trade_pct": -2.77,
-      "largest_winner_amount": 586300.0,
-      "largest_loser_amount": -370278.0,
-      "avg_holding_days": 18.4,
-      "avg_winner_holding_days": 22.1,
-      "avg_loser_holding_days": 13.8,
-      "exposure_time_pct": 68.0,
-      "kelly_pct": 8.7,
-      "calmar": 0.78,
-      "ulcer_index": 4.21,
-      "recovery_factor": 1.72,
-      "payoff_ratio": 1.59
+      "avg_trade_pct": 0.5719,
+      "avg_winner_pct": 2.9379,
+      "avg_loser_pct": -2.6954,
+      "best_trade_pct": 5.6083,
+      "worst_trade_pct": -5.3349,
+      "largest_winner_amount": 20236.89,
+      "largest_loser_amount": -34388.08,
+      "exposure_time_pct": 50.0
     },
     "risk": {
-      "volatility_pct_annualised": 12.4,
-      "downside_deviation_pct": 7.8,
-      "var_95_pct": -1.8,
-      "cvar_95_pct": -2.6,
-      "beta_vs_benchmark": 0.92,
-      "alpha_pct_annualised": 4.2,
-      "correlation_to_benchmark": 0.74,
-      "tracking_error_pct": 6.1,
-      "information_ratio": 0.69
-    },
-    "periodic_returns": {
-      "monthly": [
-        { "period": "2023-05", "return_pct":  1.20 },
-        { "period": "2023-06", "return_pct":  2.40 },
-        { "period": "2023-07", "return_pct": -0.80 },
-        { "period": "2023-08", "return_pct":  3.10 }
-      ],
-      "yearly": [
-        { "period": "2023", "return_pct": 12.4 },
-        { "period": "2024", "return_pct": 14.8 },
-        { "period": "2025", "return_pct":  3.1 }
-      ]
-    },
-    "rolling": {
-      "rolling_sharpe_30d":     [{ "date": "2023-06-15", "value": 1.21 }],
-      "rolling_volatility_30d": [{ "date": "2023-06-15", "value": 0.118 }],
-      "rolling_correlation_30d":[{ "date": "2023-06-15", "value": 0.78 }]
+      "volatility_pct_annualised": 0.1427,
+      "var_95_pct": -2.6954,
+      "cvar_95_pct": -3.7736
     }
   },
-
   "time_series": {
     "equity_curve": [
-      { "date": "2023-05-01", "nav": 100.00, "cash": 100.00, "positions_value": 0.00 },
-      { "date": "2023-06-01", "nav": 101.20, "cash":  60.00, "positions_value": 41.20 },
-      { "date": "2025-04-30", "nav": 131.40, "cash":  45.00, "positions_value": 86.40 }
+      {
+        "date": "2025-07-02",
+        "nav": 100.0
+      },
+      {
+        "date": "2025-07-03",
+        "nav": 100.0
+      },
+      {
+        "date": "2025-07-04",
+        "nav": 100.0
+      },
+      {
+        "date": "2025-07-05",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-06",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-07",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-08",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-09",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-10",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-11",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-12",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-13",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-14",
+        "nav": 99.9755
+      },
+      {
+        "date": "2025-07-15",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-16",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-17",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-18",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-19",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-20",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-21",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-22",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-23",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-24",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-25",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-26",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-27",
+        "nav": 99.9756
+      },
+      {
+        "date": "2025-07-28",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-07-29",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-07-30",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-07-31",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-08-01",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-08-02",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-08-03",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-08-04",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-08-05",
+        "nav": 99.9758
+      },
+      {
+        "date": "2025-08-06",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-07",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-08",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-09",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-10",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-11",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-12",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-13",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-14",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-15",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-16",
+        "nav": 99.9491
+      },
+      {
+        "date": "2025-08-17",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-18",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-19",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-20",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-21",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-22",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-23",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-24",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-25",
+        "nav": 99.8808
+      },
+      {
+        "date": "2025-08-26",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-08-27",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-08-28",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-08-29",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-08-30",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-08-31",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-09-01",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-09-02",
+        "nav": 99.8867
+      },
+      {
+        "date": "2025-09-03",
+        "nav": 99.8731
+      },
+      {
+        "date": "2025-09-04",
+        "nav": 99.8731
+      },
+      {
+        "date": "2025-09-05",
+        "nav": 99.8731
+      },
+      {
+        "date": "2025-09-06",
+        "nav": 99.8731
+      },
+      {
+        "date": "2025-09-07",
+        "nav": 99.8731
+      },
+      {
+        "date": "2025-09-08",
+        "nav": 99.8731
+      },
+      {
+        "date": "2025-09-09",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-10",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-11",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-12",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-13",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-14",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-15",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-16",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-17",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-18",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-19",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-20",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-21",
+        "nav": 99.8329
+      },
+      {
+        "date": "2025-09-22",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-23",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-24",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-25",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-26",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-27",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-28",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-29",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-09-30",
+        "nav": 99.8334
+      },
+      {
+        "date": "2025-10-01",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-02",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-03",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-04",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-05",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-06",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-07",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-08",
+        "nav": 99.8392
+      },
+      {
+        "date": "2025-10-09",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-10",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-11",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-12",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-13",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-14",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-15",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-16",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-17",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-18",
+        "nav": 99.7621
+      },
+      {
+        "date": "2025-10-19",
+        "nav": 99.7626
+      },
+      {
+        "date": "2025-10-20",
+        "nav": 99.7626
+      },
+      {
+        "date": "2025-10-21",
+        "nav": 99.7626
+      },
+      {
+        "date": "2025-10-22",
+        "nav": 99.7626
+      },
+      {
+        "date": "2025-10-23",
+        "nav": 99.7626
+      },
+      {
+        "date": "2025-10-24",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-25",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-26",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-27",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-28",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-29",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-30",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-10-31",
+        "nav": 99.7719
+      },
+      {
+        "date": "2025-11-01",
+        "nav": 99.8047
+      },
+      {
+        "date": "2025-11-02",
+        "nav": 99.8047
+      },
+      {
+        "date": "2025-11-03",
+        "nav": 99.8047
+      },
+      {
+        "date": "2025-11-04",
+        "nav": 99.8047
+      },
+      {
+        "date": "2025-11-05",
+        "nav": 99.8047
+      },
+      {
+        "date": "2025-11-06",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-07",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-08",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-09",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-10",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-11",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-12",
+        "nav": 99.8447
+      },
+      {
+        "date": "2025-11-13",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-14",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-15",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-16",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-17",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-18",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-19",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-20",
+        "nav": 99.847
+      },
+      {
+        "date": "2025-11-21",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-22",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-23",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-24",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-25",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-26",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-27",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-28",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-29",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-11-30",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-12-01",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-12-02",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-12-03",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-12-04",
+        "nav": 99.8352
+      },
+      {
+        "date": "2025-12-05",
+        "nav": 99.831
+      },
+      {
+        "date": "2025-12-06",
+        "nav": 99.831
+      },
+      {
+        "date": "2025-12-07",
+        "nav": 99.831
+      },
+      {
+        "date": "2025-12-08",
+        "nav": 99.831
+      },
+      {
+        "date": "2025-12-09",
+        "nav": 99.831
+      },
+      {
+        "date": "2025-12-10",
+        "nav": 99.831
+      },
+      {
+        "date": "2025-12-11",
+        "nav": 99.8315
+      },
+      {
+        "date": "2025-12-12",
+        "nav": 99.8315
+      },
+      {
+        "date": "2025-12-13",
+        "nav": 99.8315
+      },
+      {
+        "date": "2025-12-14",
+        "nav": 99.8315
+      },
+      {
+        "date": "2025-12-15",
+        "nav": 99.8315
+      },
+      {
+        "date": "2025-12-16",
+        "nav": 99.8315
+      },
+      {
+        "date": "2025-12-17",
+        "nav": 99.8316
+      },
+      {
+        "date": "2025-12-18",
+        "nav": 99.8316
+      },
+      {
+        "date": "2025-12-19",
+        "nav": 99.8316
+      },
+      {
+        "date": "2025-12-20",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-21",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-22",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-23",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-24",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-25",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-26",
+        "nav": 99.8386
+      },
+      {
+        "date": "2025-12-27",
+        "nav": 99.8435
+      },
+      {
+        "date": "2025-12-28",
+        "nav": 99.8435
+      },
+      {
+        "date": "2025-12-29",
+        "nav": 99.8435
+      },
+      {
+        "date": "2025-12-30",
+        "nav": 99.8435
+      },
+      {
+        "date": "2025-12-31",
+        "nav": 99.8435
+      }
     ],
     "drawdown_curve": [
-      { "date": "2023-05-01", "drawdown_pct":  0.00, "underwater": false },
-      { "date": "2024-09-12", "drawdown_pct": -18.20, "underwater": true }
-    ],
-    "benchmark_curves": [
-      { "name": "Nifty 50 TR", "series": [
-        { "date": "2023-05-01", "value": 100.00 },
-        { "date": "2025-04-30", "value": 118.60 }
-      ]}
-    ],
-    "exposure_curve": [
-      { "date": "2023-05-01", "long_exposure_pct":  0.0, "short_exposure_pct": 0.0, "net_exposure_pct":  0.0, "n_positions":  0 },
-      { "date": "2024-11-14", "long_exposure_pct": 84.0, "short_exposure_pct": 0.0, "net_exposure_pct": 84.0, "n_positions": 11 }
+      {
+        "date": "2025-07-02",
+        "drawdown_pct": 0.0,
+        "underwater": false
+      },
+      {
+        "date": "2025-07-03",
+        "drawdown_pct": 0.0,
+        "underwater": false
+      },
+      {
+        "date": "2025-07-04",
+        "drawdown_pct": 0.0,
+        "underwater": false
+      },
+      {
+        "date": "2025-07-05",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-06",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-07",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-08",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-09",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-10",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-11",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-12",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-13",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-14",
+        "drawdown_pct": -0.0245,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-15",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-16",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-17",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-18",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-19",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-20",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-21",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-22",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-23",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-24",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-25",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-26",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-27",
+        "drawdown_pct": -0.0244,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-28",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-29",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-30",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-07-31",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-01",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-02",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-03",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-04",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-05",
+        "drawdown_pct": -0.0242,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-06",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-07",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-08",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-09",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-10",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-11",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-12",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-13",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-14",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-15",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-16",
+        "drawdown_pct": -0.0509,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-17",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-18",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-19",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-20",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-21",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-22",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-23",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-24",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-25",
+        "drawdown_pct": -0.1192,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-26",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-27",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-28",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-29",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-30",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-08-31",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-01",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-02",
+        "drawdown_pct": -0.1133,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-03",
+        "drawdown_pct": -0.1269,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-04",
+        "drawdown_pct": -0.1269,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-05",
+        "drawdown_pct": -0.1269,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-06",
+        "drawdown_pct": -0.1269,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-07",
+        "drawdown_pct": -0.1269,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-08",
+        "drawdown_pct": -0.1269,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-09",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-10",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-11",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-12",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-13",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-14",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-15",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-16",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-17",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-18",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-19",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-20",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-21",
+        "drawdown_pct": -0.1671,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-22",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-23",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-24",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-25",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-26",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-27",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-28",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-29",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-09-30",
+        "drawdown_pct": -0.1666,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-01",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-02",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-03",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-04",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-05",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-06",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-07",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-08",
+        "drawdown_pct": -0.1608,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-09",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-10",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-11",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-12",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-13",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-14",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-15",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-16",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-17",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-18",
+        "drawdown_pct": -0.2379,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-19",
+        "drawdown_pct": -0.2374,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-20",
+        "drawdown_pct": -0.2374,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-21",
+        "drawdown_pct": -0.2374,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-22",
+        "drawdown_pct": -0.2374,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-23",
+        "drawdown_pct": -0.2374,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-24",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-25",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-26",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-27",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-28",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-29",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-30",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-10-31",
+        "drawdown_pct": -0.2281,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-01",
+        "drawdown_pct": -0.1953,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-02",
+        "drawdown_pct": -0.1953,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-03",
+        "drawdown_pct": -0.1953,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-04",
+        "drawdown_pct": -0.1953,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-05",
+        "drawdown_pct": -0.1953,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-06",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-07",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-08",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-09",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-10",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-11",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-12",
+        "drawdown_pct": -0.1553,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-13",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-14",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-15",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-16",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-17",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-18",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-19",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-20",
+        "drawdown_pct": -0.153,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-21",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-22",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-23",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-24",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-25",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-26",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-27",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-28",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-29",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-11-30",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-01",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-02",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-03",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-04",
+        "drawdown_pct": -0.1648,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-05",
+        "drawdown_pct": -0.169,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-06",
+        "drawdown_pct": -0.169,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-07",
+        "drawdown_pct": -0.169,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-08",
+        "drawdown_pct": -0.169,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-09",
+        "drawdown_pct": -0.169,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-10",
+        "drawdown_pct": -0.169,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-11",
+        "drawdown_pct": -0.1685,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-12",
+        "drawdown_pct": -0.1685,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-13",
+        "drawdown_pct": -0.1685,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-14",
+        "drawdown_pct": -0.1685,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-15",
+        "drawdown_pct": -0.1685,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-16",
+        "drawdown_pct": -0.1685,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-17",
+        "drawdown_pct": -0.1684,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-18",
+        "drawdown_pct": -0.1684,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-19",
+        "drawdown_pct": -0.1684,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-20",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-21",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-22",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-23",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-24",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-25",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-26",
+        "drawdown_pct": -0.1614,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-27",
+        "drawdown_pct": -0.1565,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-28",
+        "drawdown_pct": -0.1565,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-29",
+        "drawdown_pct": -0.1565,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-30",
+        "drawdown_pct": -0.1565,
+        "underwater": true
+      },
+      {
+        "date": "2025-12-31",
+        "drawdown_pct": -0.1565,
+        "underwater": true
+      }
     ]
   },
-
   "trades": [
     {
-      "id": "T-0421",
-      "symbol": "RELIANCE.NS",
-      "instrument_type": "equity",
-      "side": "long",
-      "entry": {
-        "timestamp": "2024-11-14T09:30:00+05:30",
-        "price": 23104.20,
-        "quantity": 540,
-        "value": 12476268.00,
-        "fees": 374.29,
-        "slippage_bps": 5.0,
-        "reason": "EMA(20) crossed above EMA(50); RSI(14)=58.2",
-        "signal_type": "entry_long"
-      },
-      "exit": {
-        "timestamp": "2024-12-03T15:45:00+05:30",
-        "price": 24018.55,
-        "quantity": 540,
-        "value": 12970017.00,
-        "fees": 389.10,
-        "slippage_bps": 5.0,
-        "reason": "ATR(14)*2 trailing stop hit",
-        "signal_type": "stop_loss"
-      },
-      "pnl": {
-        "gross":          493749.00,
-        "fees_total":        763.39,
-        "slippage_total":   1233.92,
-        "taxes_total":      1297.00,
-        "net":            490454.69,
-        "pct":               3.94,
-        "r_multiple":        1.32
-      },
-      "holding": {
-        "bars":           14,
-        "calendar_days":  19,
-        "trading_days":   14
-      },
-      "filters_at_entry": {
-        "symbol":       "RELIANCE.NS",
-        "trend":        "uptrend",
-        "rsi_zone":     "neutral",
-        "bb_position":  "middle",
-        "day_of_week":  "Thu",
-        "month":        "Nov",
-        "session":      "regular",
-        "volume_ratio_20d": 1.15
-      },
-      "indicators_at_entry": {
-        "rsi_14":  58.2,
-        "ema_20":  22850.10,
-        "ema_50":  22310.55,
-        "ema_200": 21945.20,
-        "atr_14":  245.30,
-        "bb_upper":23420.50,
-        "bb_lower":22680.10
-      },
-      "mae_pct": -1.20,
-      "mfe_pct":  4.15,
-      "tags":    ["high_conviction"],
-      "notes":   ""
-    },
-    {
-      "id": "T-0420",
+      "id": "T-0001",
       "symbol": "HDFCBANK.NS",
       "instrument_type": "equity",
       "side": "long",
       "entry": {
-        "timestamp": "2024-10-22T09:30:00+05:30",
-        "price": 24788.10,
-        "quantity": 540,
-        "value": 13385574.00,
-        "fees": 401.57,
+        "timestamp": "2025-07-02T09:30:00+00:00",
+        "price": 1020.36,
+        "quantity": 100,
+        "value": 102036.0,
+        "fees": 30.61,
         "slippage_bps": 5.0,
-        "reason": "EMA crossover",
+        "reason": "signal_breakout",
         "signal_type": "entry_long"
       },
       "exit": {
-        "timestamp": "2024-11-08T15:45:00+05:30",
-        "price": 24102.40,
-        "quantity": 540,
-        "value": 13015296.00,
-        "fees": 390.46,
+        "timestamp": "2025-07-05T09:30:00+00:00",
+        "price": 997.06,
+        "quantity": 100,
+        "value": 99706.0,
+        "fees": 30.61,
         "slippage_bps": 5.0,
-        "reason": "Opposite EMA cross",
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -2330.35,
+        "fees_total": 61.22,
+        "slippage_total": 51.02,
+        "taxes_total": 10.2,
+        "net": -2452.79,
+        "pct": -2.4038,
+        "r_multiple": -0.89
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Wed",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 71.7,
+        "atr_14": 12.24
+      },
+      "mae_pct": -2.91,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0002",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-07-12T09:30:00+00:00",
+        "price": 438.74,
+        "quantity": 1,
+        "value": 438.74,
+        "fees": 0.13,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-07-15T09:30:00+00:00",
+        "price": 449.11,
+        "quantity": 1,
+        "value": 449.11,
+        "fees": 0.13,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
         "signal_type": "exit_signal"
       },
       "pnl": {
-        "gross":         -370278.00,
-        "fees_total":        792.03,
-        "slippage_total":  1320.04,
-        "taxes_total":     1302.00,
-        "net":           -373692.07,
-        "pct":              -2.77,
-        "r_multiple":       -0.93
+        "gross": 10.37,
+        "fees_total": 0.26,
+        "slippage_total": 0.22,
+        "taxes_total": 0.04,
+        "net": 9.85,
+        "pct": 2.2451,
+        "r_multiple": 0.83
       },
       "holding": {
-        "bars": 13,
-        "calendar_days": 17,
-        "trading_days": 13
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
       },
       "filters_at_entry": {
-        "symbol":       "HDFCBANK.NS",
-        "trend":        "uptrend",
-        "rsi_zone":     "neutral",
-        "bb_position":  "upper_band",
-        "day_of_week":  "Tue",
-        "month":        "Oct",
-        "session":      "regular",
-        "volume_ratio_20d": 1.04
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sat",
+        "month": "Jul",
+        "session": "regular"
       },
       "indicators_at_entry": {
-        "rsi_14":  62.4,
-        "ema_20":  24102.10,
-        "ema_50":  23998.55
+        "rsi_14": 50.2,
+        "atr_14": 5.26
       },
-      "mae_pct": -3.20,
-      "mfe_pct":  0.85,
-      "tags":    [],
-      "notes":   ""
+      "mae_pct": 0.0,
+      "mfe_pct": 3.27,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0003",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-07-23T09:30:00+00:00",
+        "price": 924.18,
+        "quantity": 2,
+        "value": 1848.36,
+        "fees": 0.56,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-07-28T09:30:00+00:00",
+        "price": 936.76,
+        "quantity": 2,
+        "value": 1873.52,
+        "fees": 0.56,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 25.17,
+        "fees_total": 1.11,
+        "slippage_total": 0.92,
+        "taxes_total": 0.18,
+        "net": 22.96,
+        "pct": 1.2422,
+        "r_multiple": 0.46
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Wed",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 56.3,
+        "atr_14": 11.09
+      },
+      "mae_pct": -0.35,
+      "mfe_pct": 2.28,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0004",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-08-01T09:30:00+00:00",
+        "price": 484.58,
+        "quantity": 200,
+        "value": 96916.0,
+        "fees": 29.07,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-08-06T09:30:00+00:00",
+        "price": 471.83,
+        "quantity": 200,
+        "value": 94366.0,
+        "fees": 29.07,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -2549.43,
+        "fees_total": 58.15,
+        "slippage_total": 48.46,
+        "taxes_total": 9.69,
+        "net": -2665.73,
+        "pct": -2.7506,
+        "r_multiple": -1.02
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Fri",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 28.1,
+        "atr_14": 5.81
+      },
+      "mae_pct": -4.36,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0005",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-08-14T09:30:00+00:00",
+        "price": 1911.89,
+        "quantity": 100,
+        "value": 191189.0,
+        "fees": 57.35,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-08-17T09:30:00+00:00",
+        "price": 1845.8,
+        "quantity": 100,
+        "value": 184580.0,
+        "fees": 57.35,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -6608.67,
+        "fees_total": 114.71,
+        "slippage_total": 95.59,
+        "taxes_total": 19.12,
+        "net": -6838.09,
+        "pct": -3.5766,
+        "r_multiple": -1.32
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 25.1,
+        "atr_14": 22.94
+      },
+      "mae_pct": -5.3,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0006",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-08-22T09:30:00+00:00",
+        "price": 1235.94,
+        "quantity": 10,
+        "value": 12359.4,
+        "fees": 3.71,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-08-26T09:30:00+00:00",
+        "price": 1296.94,
+        "quantity": 10,
+        "value": 12969.4,
+        "fees": 3.71,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 610.04,
+        "fees_total": 7.42,
+        "slippage_total": 6.18,
+        "taxes_total": 1.24,
+        "net": 595.2,
+        "pct": 4.8158,
+        "r_multiple": 1.78
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Fri",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 20.3,
+        "atr_14": 14.83
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 6.14,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0007",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-09-02T09:30:00+00:00",
+        "price": 688.89,
+        "quantity": 50,
+        "value": 34444.5,
+        "fees": 10.34,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-09-03T09:30:00+00:00",
+        "price": 662.52,
+        "quantity": 50,
+        "value": 33126.0,
+        "fees": 10.34,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -1318.31,
+        "fees_total": 20.67,
+        "slippage_total": 17.22,
+        "taxes_total": 3.44,
+        "net": -1359.64,
+        "pct": -3.9473,
+        "r_multiple": -1.46
+      },
+      "holding": {
+        "bars": 1,
+        "calendar_days": 1,
+        "trading_days": 1
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Tue",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 36.6,
+        "atr_14": 8.27
+      },
+      "mae_pct": -5.05,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0008",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-09-04T09:30:00+00:00",
+        "price": 937.56,
+        "quantity": 200,
+        "value": 187512.0,
+        "fees": 56.26,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-09-09T09:30:00+00:00",
+        "price": 918.59,
+        "quantity": 200,
+        "value": 183718.0,
+        "fees": 56.26,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -3794.67,
+        "fees_total": 112.51,
+        "slippage_total": 93.76,
+        "taxes_total": 18.75,
+        "net": -4019.69,
+        "pct": -2.1437,
+        "r_multiple": -0.79
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 56.1,
+        "atr_14": 11.25
+      },
+      "mae_pct": -3.71,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0009",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-09-16T09:30:00+00:00",
+        "price": 889.06,
+        "quantity": 2,
+        "value": 1778.12,
+        "fees": 0.54,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-09-22T09:30:00+00:00",
+        "price": 914.41,
+        "quantity": 2,
+        "value": 1828.82,
+        "fees": 0.54,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 50.7,
+        "fees_total": 1.07,
+        "slippage_total": 0.89,
+        "taxes_total": 0.18,
+        "net": 48.56,
+        "pct": 2.731,
+        "r_multiple": 1.01
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Tue",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 26.0,
+        "atr_14": 10.67
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.01,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0010",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-09-25T09:30:00+00:00",
+        "price": 2061.89,
+        "quantity": 5,
+        "value": 10309.45,
+        "fees": 3.1,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-10-01T09:30:00+00:00",
+        "price": 2180.0,
+        "quantity": 5,
+        "value": 10900.0,
+        "fees": 3.1,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 590.55,
+        "fees_total": 6.19,
+        "slippage_total": 5.15,
+        "taxes_total": 1.03,
+        "net": 578.18,
+        "pct": 5.6083,
+        "r_multiple": 2.08
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 31.7,
+        "atr_14": 24.74
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 7.13,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0011",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-10-05T09:30:00+00:00",
+        "price": 1221.17,
+        "quantity": 200,
+        "value": 244234.0,
+        "fees": 73.27,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-10-09T09:30:00+00:00",
+        "price": 1184.08,
+        "quantity": 200,
+        "value": 236816.0,
+        "fees": 73.27,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -7418.15,
+        "fees_total": 146.54,
+        "slippage_total": 122.12,
+        "taxes_total": 24.42,
+        "net": -7711.23,
+        "pct": -3.1573,
+        "r_multiple": -1.17
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Sun",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 76.5,
+        "atr_14": 14.65
+      },
+      "mae_pct": -4.01,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0012",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-10-12T09:30:00+00:00",
+        "price": 483.66,
+        "quantity": 2,
+        "value": 967.32,
+        "fees": 0.29,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-10-19T09:30:00+00:00",
+        "price": 509.91,
+        "quantity": 2,
+        "value": 1019.82,
+        "fees": 0.29,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 52.5,
+        "fees_total": 0.58,
+        "slippage_total": 0.48,
+        "taxes_total": 0.1,
+        "net": 51.34,
+        "pct": 5.3074,
+        "r_multiple": 1.97
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 43.0,
+        "atr_14": 5.8
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 6.29,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0013",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-10-20T09:30:00+00:00",
+        "price": 816.69,
+        "quantity": 50,
+        "value": 40834.5,
+        "fees": 12.25,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-10-24T09:30:00+00:00",
+        "price": 836.36,
+        "quantity": 50,
+        "value": 41818.0,
+        "fees": 12.25,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 983.71,
+        "fees_total": 24.5,
+        "slippage_total": 20.42,
+        "taxes_total": 4.08,
+        "net": 934.71,
+        "pct": 2.289,
+        "r_multiple": 0.85
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Mon",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 59.5,
+        "atr_14": 9.8
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.27,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0014",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-10-26T09:30:00+00:00",
+        "price": 937.5,
+        "quantity": 100,
+        "value": 93750.0,
+        "fees": 28.12,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-11-01T09:30:00+00:00",
+        "price": 971.39,
+        "quantity": 100,
+        "value": 97139.0,
+        "fees": 28.12,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 3388.9,
+        "fees_total": 56.25,
+        "slippage_total": 46.88,
+        "taxes_total": 9.38,
+        "net": 3276.39,
+        "pct": 3.4948,
+        "r_multiple": 1.29
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Sun",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 49.9,
+        "atr_14": 11.25
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.19,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0015",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-11-03T09:30:00+00:00",
+        "price": 1264.78,
+        "quantity": 200,
+        "value": 252956.0,
+        "fees": 75.89,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-11-06T09:30:00+00:00",
+        "price": 1286.32,
+        "quantity": 200,
+        "value": 257264.0,
+        "fees": 75.89,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 4308.43,
+        "fees_total": 151.77,
+        "slippage_total": 126.48,
+        "taxes_total": 25.3,
+        "net": 4004.88,
+        "pct": 1.5832,
+        "r_multiple": 0.59
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Mon",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 32.3,
+        "atr_14": 15.18
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.19,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0016",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-11-08T09:30:00+00:00",
+        "price": 2251.15,
+        "quantity": 2,
+        "value": 4502.3,
+        "fees": 1.35,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-11-13T09:30:00+00:00",
+        "price": 2365.88,
+        "quantity": 2,
+        "value": 4731.76,
+        "fees": 1.35,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 229.46,
+        "fees_total": 2.7,
+        "slippage_total": 2.25,
+        "taxes_total": 0.45,
+        "net": 224.06,
+        "pct": 4.9766,
+        "r_multiple": 1.84
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Sat",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 42.1,
+        "atr_14": 27.01
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.67,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0017",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-11-16T09:30:00+00:00",
+        "price": 2210.13,
+        "quantity": 10,
+        "value": 22101.3,
+        "fees": 6.63,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-11-21T09:30:00+00:00",
+        "price": 2094.87,
+        "quantity": 10,
+        "value": 20948.7,
+        "fees": 6.63,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -1152.56,
+        "fees_total": 13.26,
+        "slippage_total": 11.05,
+        "taxes_total": 2.21,
+        "net": -1179.08,
+        "pct": -5.3349,
+        "r_multiple": -1.98
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Sun",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 47.0,
+        "atr_14": 26.52
+      },
+      "mae_pct": -6.1,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0018",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-11-24T09:30:00+00:00",
+        "price": 133.4,
+        "quantity": 2,
+        "value": 266.8,
+        "fees": 0.08,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-11-30T09:30:00+00:00",
+        "price": 135.62,
+        "quantity": 2,
+        "value": 271.24,
+        "fees": 0.08,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 4.44,
+        "fees_total": 0.16,
+        "slippage_total": 0.13,
+        "taxes_total": 0.03,
+        "net": 4.12,
+        "pct": 1.5442,
+        "r_multiple": 0.57
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Mon",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 68.6,
+        "atr_14": 1.6
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.98,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0019",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-12-01T09:30:00+00:00",
+        "price": 2050.54,
+        "quantity": 5,
+        "value": 10252.7,
+        "fees": 3.08,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-12-05T09:30:00+00:00",
+        "price": 1967.51,
+        "quantity": 5,
+        "value": 9837.55,
+        "fees": 3.08,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -415.15,
+        "fees_total": 6.15,
+        "slippage_total": 5.13,
+        "taxes_total": 1.03,
+        "net": -427.46,
+        "pct": -4.1692,
+        "r_multiple": -1.54
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Mon",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 30.6,
+        "atr_14": 24.61
+      },
+      "mae_pct": -5.33,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0020",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-12-07T09:30:00+00:00",
+        "price": 1955.8,
+        "quantity": 1,
+        "value": 1955.8,
+        "fees": 0.58,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-12-11T09:30:00+00:00",
+        "price": 2010.62,
+        "quantity": 1,
+        "value": 2010.62,
+        "fees": 0.58,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 54.82,
+        "fees_total": 1.17,
+        "slippage_total": 0.98,
+        "taxes_total": 0.2,
+        "net": 52.47,
+        "pct": 2.6828,
+        "r_multiple": 0.99
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 76.3,
+        "atr_14": 23.47
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.7,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0021",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-12-15T09:30:00+00:00",
+        "price": 344.52,
+        "quantity": 1,
+        "value": 344.52,
+        "fees": 0.1,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-12-17T09:30:00+00:00",
+        "price": 356.47,
+        "quantity": 1,
+        "value": 356.47,
+        "fees": 0.1,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 11.95,
+        "fees_total": 0.21,
+        "slippage_total": 0.17,
+        "taxes_total": 0.03,
+        "net": 11.54,
+        "pct": 3.3496,
+        "r_multiple": 1.24
+      },
+      "holding": {
+        "bars": 2,
+        "calendar_days": 2,
+        "trading_days": 2
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Mon",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 40.7,
+        "atr_14": 4.13
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.72,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0022",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-12-18T09:30:00+00:00",
+        "price": 191.89,
+        "quantity": 100,
+        "value": 19189.0,
+        "fees": 5.75,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-12-20T09:30:00+00:00",
+        "price": 199.12,
+        "quantity": 100,
+        "value": 19912.0,
+        "fees": 5.75,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 722.82,
+        "fees_total": 11.51,
+        "slippage_total": 9.59,
+        "taxes_total": 1.92,
+        "net": 699.8,
+        "pct": 3.6469,
+        "r_multiple": 1.35
+      },
+      "holding": {
+        "bars": 2,
+        "calendar_days": 2,
+        "trading_days": 2
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 70.2,
+        "atr_14": 2.3
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.03,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0023",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-12-21T09:30:00+00:00",
+        "price": 483.08,
+        "quantity": 50,
+        "value": 24154.0,
+        "fees": 7.25,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2025-12-27T09:30:00+00:00",
+        "price": 493.39,
+        "quantity": 50,
+        "value": 24669.5,
+        "fees": 7.25,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 515.37,
+        "fees_total": 14.49,
+        "slippage_total": 12.08,
+        "taxes_total": 2.42,
+        "net": 486.38,
+        "pct": 2.0137,
+        "r_multiple": 0.75
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Sun",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 35.2,
+        "atr_14": 5.8
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.66,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0024",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2025-12-30T09:30:00+00:00",
+        "price": 320.16,
+        "quantity": 1,
+        "value": 320.16,
+        "fees": 0.1,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-01-05T09:30:00+00:00",
+        "price": 332.54,
+        "quantity": 1,
+        "value": 332.54,
+        "fees": 0.1,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 12.38,
+        "fees_total": 0.19,
+        "slippage_total": 0.16,
+        "taxes_total": 0.03,
+        "net": 12.0,
+        "pct": 3.7481,
+        "r_multiple": 1.39
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Tue",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 58.8,
+        "atr_14": 3.84
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.47,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0025",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-01-06T09:30:00+00:00",
+        "price": 1577.97,
+        "quantity": 500,
+        "value": 788985.0,
+        "fees": 236.69,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-01-09T09:30:00+00:00",
+        "price": 1513.52,
+        "quantity": 500,
+        "value": 756760.0,
+        "fees": 236.69,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -32226.17,
+        "fees_total": 473.39,
+        "slippage_total": 394.49,
+        "taxes_total": 78.9,
+        "net": -33172.95,
+        "pct": -4.2045,
+        "r_multiple": -1.56
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Tue",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 45.3,
+        "atr_14": 18.94
+      },
+      "mae_pct": -5.54,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0026",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-01-11T09:30:00+00:00",
+        "price": 1314.56,
+        "quantity": 10,
+        "value": 13145.6,
+        "fees": 3.94,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-01-15T09:30:00+00:00",
+        "price": 1289.7,
+        "quantity": 10,
+        "value": 12897.0,
+        "fees": 3.94,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -248.58,
+        "fees_total": 7.89,
+        "slippage_total": 6.57,
+        "taxes_total": 1.31,
+        "net": -264.35,
+        "pct": -2.0109,
+        "r_multiple": -0.74
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sun",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 67.1,
+        "atr_14": 15.77
+      },
+      "mae_pct": -2.4,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0027",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-01-20T09:30:00+00:00",
+        "price": 738.95,
+        "quantity": 100,
+        "value": 73895.0,
+        "fees": 22.17,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-01-25T09:30:00+00:00",
+        "price": 722.73,
+        "quantity": 100,
+        "value": 72273.0,
+        "fees": 22.17,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -1622.35,
+        "fees_total": 44.34,
+        "slippage_total": 36.95,
+        "taxes_total": 7.39,
+        "net": -1711.03,
+        "pct": -2.3155,
+        "r_multiple": -0.86
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Tue",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 42.5,
+        "atr_14": 8.87
+      },
+      "mae_pct": -3.59,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0028",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-01-31T09:30:00+00:00",
+        "price": 2054.59,
+        "quantity": 100,
+        "value": 205459.0,
+        "fees": 61.64,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-02-06T09:30:00+00:00",
+        "price": 2105.98,
+        "quantity": 100,
+        "value": 210598.0,
+        "fees": 61.64,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 5139.1,
+        "fees_total": 123.28,
+        "slippage_total": 102.73,
+        "taxes_total": 20.55,
+        "net": 4892.54,
+        "pct": 2.3813,
+        "r_multiple": 0.88
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Sat",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 64.3,
+        "atr_14": 24.66
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.84,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0029",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-02-10T09:30:00+00:00",
+        "price": 1226.19,
+        "quantity": 50,
+        "value": 61309.5,
+        "fees": 18.39,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-02-15T09:30:00+00:00",
+        "price": 1251.78,
+        "quantity": 50,
+        "value": 62589.0,
+        "fees": 18.39,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 1279.34,
+        "fees_total": 36.79,
+        "slippage_total": 30.65,
+        "taxes_total": 6.13,
+        "net": 1205.77,
+        "pct": 1.9667,
+        "r_multiple": 0.73
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Tue",
+        "month": "Feb",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 29.6,
+        "atr_14": 14.71
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.6,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0030",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-02-17T09:30:00+00:00",
+        "price": 468.28,
+        "quantity": 50,
+        "value": 23414.0,
+        "fees": 7.03,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-02-24T09:30:00+00:00",
+        "price": 459.51,
+        "quantity": 50,
+        "value": 22975.5,
+        "fees": 7.03,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -438.45,
+        "fees_total": 14.05,
+        "slippage_total": 11.71,
+        "taxes_total": 2.34,
+        "net": -466.55,
+        "pct": -1.9926,
+        "r_multiple": -0.74
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Tue",
+        "month": "Feb",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 31.2,
+        "atr_14": 5.62
+      },
+      "mae_pct": -2.69,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0031",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-02-26T09:30:00+00:00",
+        "price": 523.62,
+        "quantity": 500,
+        "value": 261810.0,
+        "fees": 78.55,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-03-04T09:30:00+00:00",
+        "price": 515.81,
+        "quantity": 500,
+        "value": 257905.0,
+        "fees": 78.55,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -3903.65,
+        "fees_total": 157.09,
+        "slippage_total": 130.91,
+        "taxes_total": 26.18,
+        "net": -4217.83,
+        "pct": -1.611,
+        "r_multiple": -0.6
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Feb",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.4,
+        "atr_14": 6.28
+      },
+      "mae_pct": -2.73,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0032",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-03-05T09:30:00+00:00",
+        "price": 1972.65,
+        "quantity": 500,
+        "value": 986325.0,
+        "fees": 295.89,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-03-10T09:30:00+00:00",
+        "price": 2015.49,
+        "quantity": 500,
+        "value": 1007745.0,
+        "fees": 295.89,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 21420.47,
+        "fees_total": 591.79,
+        "slippage_total": 493.16,
+        "taxes_total": 98.63,
+        "net": 20236.89,
+        "pct": 2.0517,
+        "r_multiple": 0.76
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Thu",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 51.8,
+        "atr_14": 23.67
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.04,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0033",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-03-12T09:30:00+00:00",
+        "price": 2374.44,
+        "quantity": 1,
+        "value": 2374.44,
+        "fees": 0.71,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-03-16T09:30:00+00:00",
+        "price": 2389.73,
+        "quantity": 1,
+        "value": 2389.73,
+        "fees": 0.71,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 15.29,
+        "fees_total": 1.42,
+        "slippage_total": 1.19,
+        "taxes_total": 0.24,
+        "net": 12.44,
+        "pct": 0.5239,
+        "r_multiple": 0.19
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Thu",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 75.9,
+        "atr_14": 28.49
+      },
+      "mae_pct": -0.93,
+      "mfe_pct": 1.79,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0034",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-03-18T09:30:00+00:00",
+        "price": 2414.25,
+        "quantity": 1,
+        "value": 2414.25,
+        "fees": 0.72,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-03-23T09:30:00+00:00",
+        "price": 2473.58,
+        "quantity": 1,
+        "value": 2473.58,
+        "fees": 0.72,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 59.33,
+        "fees_total": 1.45,
+        "slippage_total": 1.21,
+        "taxes_total": 0.24,
+        "net": 56.43,
+        "pct": 2.3374,
+        "r_multiple": 0.87
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Wed",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 59.1,
+        "atr_14": 28.97
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.5,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0035",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-03-25T09:30:00+00:00",
+        "price": 491.01,
+        "quantity": 2,
+        "value": 982.02,
+        "fees": 0.29,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-03-29T09:30:00+00:00",
+        "price": 502.32,
+        "quantity": 2,
+        "value": 1004.64,
+        "fees": 0.29,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 22.61,
+        "fees_total": 0.59,
+        "slippage_total": 0.49,
+        "taxes_total": 0.1,
+        "net": 21.43,
+        "pct": 2.1822,
+        "r_multiple": 0.81
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Wed",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.7,
+        "atr_14": 5.89
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.48,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0036",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-03-30T09:30:00+00:00",
+        "price": 690.79,
+        "quantity": 5,
+        "value": 3453.95,
+        "fees": 1.03,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-04-05T09:30:00+00:00",
+        "price": 724.59,
+        "quantity": 5,
+        "value": 3622.95,
+        "fees": 1.03,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 169.01,
+        "fees_total": 2.07,
+        "slippage_total": 1.73,
+        "taxes_total": 0.35,
+        "net": 164.86,
+        "pct": 4.7731,
+        "r_multiple": 1.77
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Mon",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 73.1,
+        "atr_14": 8.29
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.89,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0037",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-04-11T09:30:00+00:00",
+        "price": 2337.39,
+        "quantity": 10,
+        "value": 23373.9,
+        "fees": 7.01,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-04-14T09:30:00+00:00",
+        "price": 2371.74,
+        "quantity": 10,
+        "value": 23717.4,
+        "fees": 7.01,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 343.46,
+        "fees_total": 14.02,
+        "slippage_total": 11.69,
+        "taxes_total": 2.34,
+        "net": 315.41,
+        "pct": 1.3494,
+        "r_multiple": 0.5
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Sat",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 76.9,
+        "atr_14": 28.05
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.97,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0038",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-04-15T09:30:00+00:00",
+        "price": 144.1,
+        "quantity": 200,
+        "value": 28820.0,
+        "fees": 8.64,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-04-19T09:30:00+00:00",
+        "price": 141.43,
+        "quantity": 200,
+        "value": 28286.0,
+        "fees": 8.64,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -534.96,
+        "fees_total": 17.29,
+        "slippage_total": 14.41,
+        "taxes_total": 2.88,
+        "net": -569.54,
+        "pct": -1.9762,
+        "r_multiple": -0.73
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Wed",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.1,
+        "atr_14": 1.73
+      },
+      "mae_pct": -2.55,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0039",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-04-25T09:30:00+00:00",
+        "price": 130.53,
+        "quantity": 100,
+        "value": 13053.0,
+        "fees": 3.92,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-04-28T09:30:00+00:00",
+        "price": 132.91,
+        "quantity": 100,
+        "value": 13291.0,
+        "fees": 3.92,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 238.29,
+        "fees_total": 7.83,
+        "slippage_total": 6.53,
+        "taxes_total": 1.31,
+        "net": 222.62,
+        "pct": 1.7055,
+        "r_multiple": 0.63
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Sat",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 51.4,
+        "atr_14": 1.57
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.23,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0040",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-05-02T09:30:00+00:00",
+        "price": 2126.05,
+        "quantity": 1,
+        "value": 2126.05,
+        "fees": 0.64,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-05-06T09:30:00+00:00",
+        "price": 2185.25,
+        "quantity": 1,
+        "value": 2185.25,
+        "fees": 0.64,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 59.2,
+        "fees_total": 1.28,
+        "slippage_total": 1.06,
+        "taxes_total": 0.21,
+        "net": 56.65,
+        "pct": 2.6646,
+        "r_multiple": 0.99
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sat",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 24.3,
+        "atr_14": 25.51
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.32,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0041",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-05-08T09:30:00+00:00",
+        "price": 785.79,
+        "quantity": 100,
+        "value": 78579.0,
+        "fees": 23.57,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-05-13T09:30:00+00:00",
+        "price": 770.66,
+        "quantity": 100,
+        "value": 77066.0,
+        "fees": 23.57,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -1513.26,
+        "fees_total": 47.15,
+        "slippage_total": 39.29,
+        "taxes_total": 7.86,
+        "net": -1607.56,
+        "pct": -2.0458,
+        "r_multiple": -0.76
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Fri",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 24.3,
+        "atr_14": 9.43
+      },
+      "mae_pct": -3.04,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0042",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-05-15T09:30:00+00:00",
+        "price": 1160.08,
+        "quantity": 500,
+        "value": 580040.0,
+        "fees": 174.01,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-05-17T09:30:00+00:00",
+        "price": 1142.86,
+        "quantity": 500,
+        "value": 571430.0,
+        "fees": 174.01,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -8611.47,
+        "fees_total": 348.02,
+        "slippage_total": 290.02,
+        "taxes_total": 58.0,
+        "net": -9307.51,
+        "pct": -1.6046,
+        "r_multiple": -0.59
+      },
+      "holding": {
+        "bars": 2,
+        "calendar_days": 2,
+        "trading_days": 2
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Fri",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 79.2,
+        "atr_14": 13.92
+      },
+      "mae_pct": -2.91,
+      "mfe_pct": 0.49,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0043",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-05-25T09:30:00+00:00",
+        "price": 235.65,
+        "quantity": 100,
+        "value": 23565.0,
+        "fees": 7.07,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-05-30T09:30:00+00:00",
+        "price": 243.88,
+        "quantity": 100,
+        "value": 24388.0,
+        "fees": 7.07,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 823.08,
+        "fees_total": 14.14,
+        "slippage_total": 11.78,
+        "taxes_total": 2.36,
+        "net": 794.8,
+        "pct": 3.3728,
+        "r_multiple": 1.25
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Mon",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 56.1,
+        "atr_14": 2.83
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.07,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0044",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-06-02T09:30:00+00:00",
+        "price": 453.96,
+        "quantity": 500,
+        "value": 226980.0,
+        "fees": 68.09,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-06-03T09:30:00+00:00",
+        "price": 465.25,
+        "quantity": 500,
+        "value": 232625.0,
+        "fees": 68.09,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 5645.57,
+        "fees_total": 136.19,
+        "slippage_total": 113.49,
+        "taxes_total": 22.7,
+        "net": 5373.19,
+        "pct": 2.3673,
+        "r_multiple": 0.88
+      },
+      "holding": {
+        "bars": 1,
+        "calendar_days": 1,
+        "trading_days": 1
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Tue",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 46.8,
+        "atr_14": 5.45
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.86,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0045",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-06-06T09:30:00+00:00",
+        "price": 1822.0,
+        "quantity": 10,
+        "value": 18220.0,
+        "fees": 5.46,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-06-13T09:30:00+00:00",
+        "price": 1769.8,
+        "quantity": 10,
+        "value": 17698.0,
+        "fees": 5.46,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -522.0,
+        "fees_total": 10.93,
+        "slippage_total": 9.11,
+        "taxes_total": 1.82,
+        "net": -543.86,
+        "pct": -2.985,
+        "r_multiple": -1.11
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Sat",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 43.7,
+        "atr_14": 21.86
+      },
+      "mae_pct": -3.79,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0046",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-06-17T09:30:00+00:00",
+        "price": 314.71,
+        "quantity": 200,
+        "value": 62942.0,
+        "fees": 18.89,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-06-23T09:30:00+00:00",
+        "price": 319.08,
+        "quantity": 200,
+        "value": 63816.0,
+        "fees": 18.89,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 874.89,
+        "fees_total": 37.77,
+        "slippage_total": 31.47,
+        "taxes_total": 6.29,
+        "net": 799.36,
+        "pct": 1.27,
+        "r_multiple": 0.47
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Wed",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 25.0,
+        "atr_14": 3.78
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.87,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0047",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-06-30T09:30:00+00:00",
+        "price": 1679.94,
+        "quantity": 10,
+        "value": 16799.4,
+        "fees": 5.04,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-07-04T09:30:00+00:00",
+        "price": 1639.86,
+        "quantity": 10,
+        "value": 16398.6,
+        "fees": 5.04,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -400.77,
+        "fees_total": 10.08,
+        "slippage_total": 8.4,
+        "taxes_total": 1.68,
+        "net": -420.93,
+        "pct": -2.5056,
+        "r_multiple": -0.93
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Tue",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 35.2,
+        "atr_14": 20.16
+      },
+      "mae_pct": -3.54,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0048",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-07-09T09:30:00+00:00",
+        "price": 1349.14,
+        "quantity": 500,
+        "value": 674570.0,
+        "fees": 202.37,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-07-13T09:30:00+00:00",
+        "price": 1315.16,
+        "quantity": 500,
+        "value": 657580.0,
+        "fees": 202.37,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -16992.12,
+        "fees_total": 404.74,
+        "slippage_total": 337.29,
+        "taxes_total": 67.46,
+        "net": -17801.61,
+        "pct": -2.639,
+        "r_multiple": -0.98
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Thu",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 56.4,
+        "atr_14": 16.19
+      },
+      "mae_pct": -4.4,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0049",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-07-17T09:30:00+00:00",
+        "price": 1121.78,
+        "quantity": 200,
+        "value": 224356.0,
+        "fees": 67.31,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-07-21T09:30:00+00:00",
+        "price": 1102.77,
+        "quantity": 200,
+        "value": 220554.0,
+        "fees": 67.31,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -3802.01,
+        "fees_total": 134.61,
+        "slippage_total": 112.18,
+        "taxes_total": 22.44,
+        "net": -4071.24,
+        "pct": -1.8146,
+        "r_multiple": -0.67
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Fri",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 66.3,
+        "atr_14": 13.46
+      },
+      "mae_pct": -2.64,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0050",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-07-25T09:30:00+00:00",
+        "price": 1816.41,
+        "quantity": 200,
+        "value": 363282.0,
+        "fees": 108.98,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-07-28T09:30:00+00:00",
+        "price": 1765.82,
+        "quantity": 200,
+        "value": 353164.0,
+        "fees": 108.98,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -10117.99,
+        "fees_total": 217.97,
+        "slippage_total": 181.64,
+        "taxes_total": 36.33,
+        "net": -10553.93,
+        "pct": -2.9052,
+        "r_multiple": -1.08
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sat",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 75.9,
+        "atr_14": 21.8
+      },
+      "mae_pct": -4.47,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0051",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-08-02T09:30:00+00:00",
+        "price": 2437.39,
+        "quantity": 2,
+        "value": 4874.78,
+        "fees": 1.46,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-08-06T09:30:00+00:00",
+        "price": 2366.17,
+        "quantity": 2,
+        "value": 4732.34,
+        "fees": 1.46,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -142.44,
+        "fees_total": 2.92,
+        "slippage_total": 2.44,
+        "taxes_total": 0.49,
+        "net": -148.29,
+        "pct": -3.042,
+        "r_multiple": -1.13
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sun",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 69.3,
+        "atr_14": 29.25
+      },
+      "mae_pct": -4.13,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0052",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-08-12T09:30:00+00:00",
+        "price": 1955.4,
+        "quantity": 50,
+        "value": 97770.0,
+        "fees": 29.33,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-08-16T09:30:00+00:00",
+        "price": 1908.67,
+        "quantity": 50,
+        "value": 95433.5,
+        "fees": 29.33,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -2336.51,
+        "fees_total": 58.66,
+        "slippage_total": 48.88,
+        "taxes_total": 9.78,
+        "net": -2453.83,
+        "pct": -2.5098,
+        "r_multiple": -0.93
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Wed",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 75.9,
+        "atr_14": 23.46
+      },
+      "mae_pct": -4.27,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0053",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-08-17T09:30:00+00:00",
+        "price": 1734.54,
+        "quantity": 5,
+        "value": 8672.7,
+        "fees": 2.6,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-08-22T09:30:00+00:00",
+        "price": 1779.35,
+        "quantity": 5,
+        "value": 8896.75,
+        "fees": 2.6,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 224.04,
+        "fees_total": 5.2,
+        "slippage_total": 4.34,
+        "taxes_total": 0.87,
+        "net": 213.63,
+        "pct": 2.4632,
+        "r_multiple": 0.91
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Mon",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 58.2,
+        "atr_14": 20.81
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.46,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0054",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-08-23T09:30:00+00:00",
+        "price": 525.64,
+        "quantity": 1,
+        "value": 525.64,
+        "fees": 0.16,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-08-31T09:30:00+00:00",
+        "price": 546.47,
+        "quantity": 1,
+        "value": 546.47,
+        "fees": 0.16,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 20.83,
+        "fees_total": 0.32,
+        "slippage_total": 0.26,
+        "taxes_total": 0.05,
+        "net": 20.2,
+        "pct": 3.8429,
+        "r_multiple": 1.42
+      },
+      "holding": {
+        "bars": 8,
+        "calendar_days": 8,
+        "trading_days": 8
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sun",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.3,
+        "atr_14": 6.31
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.44,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0055",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-09-06T09:30:00+00:00",
+        "price": 1705.24,
+        "quantity": 10,
+        "value": 17052.4,
+        "fees": 5.12,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-09-10T09:30:00+00:00",
+        "price": 1722.46,
+        "quantity": 10,
+        "value": 17224.6,
+        "fees": 5.12,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 172.17,
+        "fees_total": 10.23,
+        "slippage_total": 8.53,
+        "taxes_total": 1.71,
+        "net": 151.7,
+        "pct": 0.8896,
+        "r_multiple": 0.33
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 38.1,
+        "atr_14": 20.46
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.32,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0056",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-09-17T09:30:00+00:00",
+        "price": 1859.44,
+        "quantity": 5,
+        "value": 9297.2,
+        "fees": 2.79,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-09-21T09:30:00+00:00",
+        "price": 1818.74,
+        "quantity": 5,
+        "value": 9093.7,
+        "fees": 2.79,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -203.5,
+        "fees_total": 5.58,
+        "slippage_total": 4.65,
+        "taxes_total": 0.93,
+        "net": -214.66,
+        "pct": -2.3089,
+        "r_multiple": -0.86
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Thu",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 78.0,
+        "atr_14": 22.31
+      },
+      "mae_pct": -3.94,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0057",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-09-27T09:30:00+00:00",
+        "price": 1884.49,
+        "quantity": 5,
+        "value": 9422.45,
+        "fees": 2.83,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-09-30T09:30:00+00:00",
+        "price": 1976.44,
+        "quantity": 5,
+        "value": 9882.2,
+        "fees": 2.83,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 459.77,
+        "fees_total": 5.65,
+        "slippage_total": 4.71,
+        "taxes_total": 0.94,
+        "net": 448.47,
+        "pct": 4.7596,
+        "r_multiple": 1.76
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Sun",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 54.8,
+        "atr_14": 22.61
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 6.33,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0058",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-10-04T09:30:00+00:00",
+        "price": 2431.76,
+        "quantity": 500,
+        "value": 1215880.0,
+        "fees": 364.76,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-10-08T09:30:00+00:00",
+        "price": 2365.9,
+        "quantity": 500,
+        "value": 1182950.0,
+        "fees": 364.76,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -32929.02,
+        "fees_total": 729.53,
+        "slippage_total": 607.94,
+        "taxes_total": 121.59,
+        "net": -34388.08,
+        "pct": -2.8282,
+        "r_multiple": -1.05
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sun",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.8,
+        "atr_14": 29.18
+      },
+      "mae_pct": -4.15,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0059",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-10-14T09:30:00+00:00",
+        "price": 1652.31,
+        "quantity": 2,
+        "value": 3304.62,
+        "fees": 0.99,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-10-19T09:30:00+00:00",
+        "price": 1621.75,
+        "quantity": 2,
+        "value": 3243.5,
+        "fees": 0.99,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -61.11,
+        "fees_total": 1.98,
+        "slippage_total": 1.65,
+        "taxes_total": 0.33,
+        "net": -65.07,
+        "pct": -1.9691,
+        "r_multiple": -0.73
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Wed",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 59.2,
+        "atr_14": 19.83
+      },
+      "mae_pct": -3.41,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0060",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-10-23T09:30:00+00:00",
+        "price": 1135.02,
+        "quantity": 2,
+        "value": 2270.04,
+        "fees": 0.68,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-10-28T09:30:00+00:00",
+        "price": 1165.42,
+        "quantity": 2,
+        "value": 2330.84,
+        "fees": 0.68,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 60.79,
+        "fees_total": 1.36,
+        "slippage_total": 1.14,
+        "taxes_total": 0.23,
+        "net": 58.06,
+        "pct": 2.5577,
+        "r_multiple": 0.95
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Fri",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 43.1,
+        "atr_14": 13.62
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0061",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-11-04T09:30:00+00:00",
+        "price": 1369.29,
+        "quantity": 2,
+        "value": 2738.58,
+        "fees": 0.82,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-11-07T09:30:00+00:00",
+        "price": 1420.89,
+        "quantity": 2,
+        "value": 2841.78,
+        "fees": 0.82,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 103.2,
+        "fees_total": 1.64,
+        "slippage_total": 1.37,
+        "taxes_total": 0.27,
+        "net": 99.92,
+        "pct": 3.6486,
+        "r_multiple": 1.35
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Wed",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 27.2,
+        "atr_14": 16.43
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.37,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0062",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-11-15T09:30:00+00:00",
+        "price": 2006.62,
+        "quantity": 1,
+        "value": 2006.62,
+        "fees": 0.6,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-11-17T09:30:00+00:00",
+        "price": 2047.87,
+        "quantity": 1,
+        "value": 2047.87,
+        "fees": 0.6,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 41.25,
+        "fees_total": 1.2,
+        "slippage_total": 1.0,
+        "taxes_total": 0.2,
+        "net": 38.85,
+        "pct": 1.9361,
+        "r_multiple": 0.72
+      },
+      "holding": {
+        "bars": 2,
+        "calendar_days": 2,
+        "trading_days": 2
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 57.9,
+        "atr_14": 24.08
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.03,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0063",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-11-22T09:30:00+00:00",
+        "price": 509.66,
+        "quantity": 100,
+        "value": 50966.0,
+        "fees": 15.29,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-11-27T09:30:00+00:00",
+        "price": 530.03,
+        "quantity": 100,
+        "value": 53003.0,
+        "fees": 15.29,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 2037.27,
+        "fees_total": 30.58,
+        "slippage_total": 25.48,
+        "taxes_total": 5.1,
+        "net": 1976.11,
+        "pct": 3.8773,
+        "r_multiple": 1.44
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 68.3,
+        "atr_14": 6.12
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.66,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0064",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-11-30T09:30:00+00:00",
+        "price": 739.81,
+        "quantity": 2,
+        "value": 1479.62,
+        "fees": 0.45,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-12-03T09:30:00+00:00",
+        "price": 769.27,
+        "quantity": 2,
+        "value": 1538.54,
+        "fees": 0.45,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 58.92,
+        "fees_total": 0.89,
+        "slippage_total": 0.74,
+        "taxes_total": 0.15,
+        "net": 57.14,
+        "pct": 3.8618,
+        "r_multiple": 1.43
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Mon",
+        "month": "Nov",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 23.5,
+        "atr_14": 8.88
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.97,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0065",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-12-07T09:30:00+00:00",
+        "price": 64.18,
+        "quantity": 2,
+        "value": 128.36,
+        "fees": 0.04,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-12-11T09:30:00+00:00",
+        "price": 62.37,
+        "quantity": 2,
+        "value": 124.74,
+        "fees": 0.04,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -3.62,
+        "fees_total": 0.08,
+        "slippage_total": 0.06,
+        "taxes_total": 0.01,
+        "net": -3.77,
+        "pct": -2.9371,
+        "r_multiple": -1.09
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Mon",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 63.9,
+        "atr_14": 0.77
+      },
+      "mae_pct": -3.55,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0066",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2026-12-18T09:30:00+00:00",
+        "price": 93.68,
+        "quantity": 1,
+        "value": 93.68,
+        "fees": 0.03,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2026-12-24T09:30:00+00:00",
+        "price": 96.11,
+        "quantity": 1,
+        "value": 96.11,
+        "fees": 0.03,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 2.43,
+        "fees_total": 0.06,
+        "slippage_total": 0.05,
+        "taxes_total": 0.01,
+        "net": 2.31,
+        "pct": 2.4658,
+        "r_multiple": 0.91
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Fri",
+        "month": "Dec",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 50.3,
+        "atr_14": 1.12
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0067",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-01-01T09:30:00+00:00",
+        "price": 1361.44,
+        "quantity": 2,
+        "value": 2722.88,
+        "fees": 0.81,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-01-05T09:30:00+00:00",
+        "price": 1297.31,
+        "quantity": 2,
+        "value": 2594.62,
+        "fees": 0.81,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -128.27,
+        "fees_total": 1.63,
+        "slippage_total": 1.36,
+        "taxes_total": 0.27,
+        "net": -131.53,
+        "pct": -4.8305,
+        "r_multiple": -1.79
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Fri",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 50.2,
+        "atr_14": 16.34
+      },
+      "mae_pct": -5.6,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0068",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-01-07T09:30:00+00:00",
+        "price": 764.29,
+        "quantity": 100,
+        "value": 76429.0,
+        "fees": 22.93,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-01-11T09:30:00+00:00",
+        "price": 786.32,
+        "quantity": 100,
+        "value": 78632.0,
+        "fees": 22.93,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 2203.47,
+        "fees_total": 45.86,
+        "slippage_total": 38.21,
+        "taxes_total": 7.64,
+        "net": 2111.76,
+        "pct": 2.763,
+        "r_multiple": 1.02
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 66.2,
+        "atr_14": 9.17
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.46,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0069",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-01-14T09:30:00+00:00",
+        "price": 2070.35,
+        "quantity": 1,
+        "value": 2070.35,
+        "fees": 0.62,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-01-17T09:30:00+00:00",
+        "price": 2187.29,
+        "quantity": 1,
+        "value": 2187.29,
+        "fees": 0.62,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 116.94,
+        "fees_total": 1.24,
+        "slippage_total": 1.04,
+        "taxes_total": 0.21,
+        "net": 114.45,
+        "pct": 5.5281,
+        "r_multiple": 2.05
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Thu",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 30.7,
+        "atr_14": 24.84
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 7.2,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0070",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-01-24T09:30:00+00:00",
+        "price": 548.25,
+        "quantity": 10,
+        "value": 5482.5,
+        "fees": 1.65,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-01-29T09:30:00+00:00",
+        "price": 567.08,
+        "quantity": 10,
+        "value": 5670.8,
+        "fees": 1.65,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 188.25,
+        "fees_total": 3.29,
+        "slippage_total": 2.74,
+        "taxes_total": 0.55,
+        "net": 181.67,
+        "pct": 3.3136,
+        "r_multiple": 1.23
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Jan",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.7,
+        "atr_14": 6.58
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.27,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0071",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-02-05T09:30:00+00:00",
+        "price": 313.37,
+        "quantity": 10,
+        "value": 3133.7,
+        "fees": 0.94,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-02-12T09:30:00+00:00",
+        "price": 305.18,
+        "quantity": 10,
+        "value": 3051.8,
+        "fees": 0.94,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -81.86,
+        "fees_total": 1.88,
+        "slippage_total": 1.57,
+        "taxes_total": 0.31,
+        "net": -85.62,
+        "pct": -2.7322,
+        "r_multiple": -1.01
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Fri",
+        "month": "Feb",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 22.2,
+        "atr_14": 3.76
+      },
+      "mae_pct": -4.37,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0072",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-02-20T09:30:00+00:00",
+        "price": 148.39,
+        "quantity": 50,
+        "value": 7419.5,
+        "fees": 2.23,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-02-25T09:30:00+00:00",
+        "price": 143.94,
+        "quantity": 50,
+        "value": 7197.0,
+        "fees": 2.23,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -222.68,
+        "fees_total": 4.45,
+        "slippage_total": 3.71,
+        "taxes_total": 0.74,
+        "net": -231.58,
+        "pct": -3.1212,
+        "r_multiple": -1.16
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Sat",
+        "month": "Feb",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 70.6,
+        "atr_14": 1.78
+      },
+      "mae_pct": -3.82,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0073",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-02-26T09:30:00+00:00",
+        "price": 639.29,
+        "quantity": 500,
+        "value": 319645.0,
+        "fees": 95.89,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-03-01T09:30:00+00:00",
+        "price": 626.97,
+        "quantity": 500,
+        "value": 313485.0,
+        "fees": 95.89,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -6161.03,
+        "fees_total": 191.79,
+        "slippage_total": 159.82,
+        "taxes_total": 31.96,
+        "net": -6544.6,
+        "pct": -2.0475,
+        "r_multiple": -0.76
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Fri",
+        "month": "Feb",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 33.0,
+        "atr_14": 7.67
+      },
+      "mae_pct": -3.76,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0074",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-03-04T09:30:00+00:00",
+        "price": 1261.98,
+        "quantity": 500,
+        "value": 630990.0,
+        "fees": 189.29,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-03-06T09:30:00+00:00",
+        "price": 1281.87,
+        "quantity": 500,
+        "value": 640935.0,
+        "fees": 189.29,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 9945.05,
+        "fees_total": 378.59,
+        "slippage_total": 315.5,
+        "taxes_total": 63.1,
+        "net": 9187.86,
+        "pct": 1.4561,
+        "r_multiple": 0.54
+      },
+      "holding": {
+        "bars": 2,
+        "calendar_days": 2,
+        "trading_days": 2
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 55.0,
+        "atr_14": 15.14
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.69,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0075",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-03-09T09:30:00+00:00",
+        "price": 384.92,
+        "quantity": 2,
+        "value": 769.84,
+        "fees": 0.23,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-03-14T09:30:00+00:00",
+        "price": 387.25,
+        "quantity": 2,
+        "value": 774.5,
+        "fees": 0.23,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 4.65,
+        "fees_total": 0.46,
+        "slippage_total": 0.38,
+        "taxes_total": 0.08,
+        "net": 3.73,
+        "pct": 0.4845,
+        "r_multiple": 0.18
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Tue",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 22.8,
+        "atr_14": 4.62
+      },
+      "mae_pct": -0.78,
+      "mfe_pct": 2.43,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0076",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-03-16T09:30:00+00:00",
+        "price": 2393.07,
+        "quantity": 50,
+        "value": 119653.5,
+        "fees": 35.9,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-03-20T09:30:00+00:00",
+        "price": 2304.49,
+        "quantity": 50,
+        "value": 115224.5,
+        "fees": 35.9,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -4429.19,
+        "fees_total": 71.79,
+        "slippage_total": 59.83,
+        "taxes_total": 11.97,
+        "net": -4572.78,
+        "pct": -3.8217,
+        "r_multiple": -1.42
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Tue",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 68.8,
+        "atr_14": 28.72
+      },
+      "mae_pct": -5.09,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0077",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-03-23T09:30:00+00:00",
+        "price": 737.97,
+        "quantity": 5,
+        "value": 3689.85,
+        "fees": 1.1,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-03-29T09:30:00+00:00",
+        "price": 779.5,
+        "quantity": 5,
+        "value": 3897.5,
+        "fees": 1.1,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 207.63,
+        "fees_total": 2.21,
+        "slippage_total": 1.84,
+        "taxes_total": 0.37,
+        "net": 203.21,
+        "pct": 5.5073,
+        "r_multiple": 2.04
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Tue",
+        "month": "Mar",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 33.1,
+        "atr_14": 8.86
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 7.56,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0078",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-04-01T09:30:00+00:00",
+        "price": 1968.95,
+        "quantity": 100,
+        "value": 196895.0,
+        "fees": 59.07,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-04-04T09:30:00+00:00",
+        "price": 2046.78,
+        "quantity": 100,
+        "value": 204678.0,
+        "fees": 59.07,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 7783.41,
+        "fees_total": 118.14,
+        "slippage_total": 98.45,
+        "taxes_total": 19.69,
+        "net": 7547.13,
+        "pct": 3.8331,
+        "r_multiple": 1.42
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Thu",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 24.8,
+        "atr_14": 23.63
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.48,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0079",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-04-07T09:30:00+00:00",
+        "price": 1862.33,
+        "quantity": 2,
+        "value": 3724.66,
+        "fees": 1.11,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-04-11T09:30:00+00:00",
+        "price": 1890.97,
+        "quantity": 2,
+        "value": 3781.94,
+        "fees": 1.11,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 57.28,
+        "fees_total": 2.23,
+        "slippage_total": 1.86,
+        "taxes_total": 0.37,
+        "net": 52.82,
+        "pct": 1.4181,
+        "r_multiple": 0.53
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Wed",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 23.3,
+        "atr_14": 22.35
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.46,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0080",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-04-18T09:30:00+00:00",
+        "price": 871.02,
+        "quantity": 5,
+        "value": 4355.1,
+        "fees": 1.3,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-04-22T09:30:00+00:00",
+        "price": 903.98,
+        "quantity": 5,
+        "value": 4519.9,
+        "fees": 1.3,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 164.8,
+        "fees_total": 2.61,
+        "slippage_total": 2.18,
+        "taxes_total": 0.44,
+        "net": 159.57,
+        "pct": 3.664,
+        "r_multiple": 1.36
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Sun",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 53.9,
+        "atr_14": 10.45
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.33,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0081",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-04-26T09:30:00+00:00",
+        "price": 2259.11,
+        "quantity": 2,
+        "value": 4518.22,
+        "fees": 1.35,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-04-29T09:30:00+00:00",
+        "price": 2343.89,
+        "quantity": 2,
+        "value": 4687.78,
+        "fees": 1.35,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 169.56,
+        "fees_total": 2.71,
+        "slippage_total": 2.26,
+        "taxes_total": 0.45,
+        "net": 164.14,
+        "pct": 3.6328,
+        "r_multiple": 1.35
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Mon",
+        "month": "Apr",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 59.0,
+        "atr_14": 27.11
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 4.58,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0082",
+      "symbol": "ICICIBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-05-05T09:30:00+00:00",
+        "price": 54.84,
+        "quantity": 5,
+        "value": 274.2,
+        "fees": 0.08,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-05-10T09:30:00+00:00",
+        "price": 55.32,
+        "quantity": 5,
+        "value": 276.6,
+        "fees": 0.08,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 2.38,
+        "fees_total": 0.16,
+        "slippage_total": 0.14,
+        "taxes_total": 0.03,
+        "net": 2.05,
+        "pct": 0.7476,
+        "r_multiple": 0.28
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "ICICIBANK.NS",
+        "day_of_week": "Wed",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 43.1,
+        "atr_14": 0.66
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.59,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0083",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-05-13T09:30:00+00:00",
+        "price": 346.26,
+        "quantity": 500,
+        "value": 173130.0,
+        "fees": 51.94,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-05-17T09:30:00+00:00",
+        "price": 334.5,
+        "quantity": 500,
+        "value": 167250.0,
+        "fees": 51.94,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -5882.18,
+        "fees_total": 103.88,
+        "slippage_total": 86.56,
+        "taxes_total": 17.31,
+        "net": -6089.93,
+        "pct": -3.5175,
+        "r_multiple": -1.3
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Thu",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 68.5,
+        "atr_14": 4.16
+      },
+      "mae_pct": -4.4,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0084",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-05-22T09:30:00+00:00",
+        "price": 2460.01,
+        "quantity": 10,
+        "value": 24600.1,
+        "fees": 7.38,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-05-27T09:30:00+00:00",
+        "price": 2361.61,
+        "quantity": 10,
+        "value": 23616.1,
+        "fees": 7.38,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -983.99,
+        "fees_total": 14.76,
+        "slippage_total": 12.3,
+        "taxes_total": 2.46,
+        "net": -1013.51,
+        "pct": -4.1199,
+        "r_multiple": -1.53
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Sat",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 42.1,
+        "atr_14": 29.52
+      },
+      "mae_pct": -5.89,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0085",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-05-30T09:30:00+00:00",
+        "price": 2407.75,
+        "quantity": 2,
+        "value": 4815.5,
+        "fees": 1.45,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-06-02T09:30:00+00:00",
+        "price": 2483.47,
+        "quantity": 2,
+        "value": 4966.94,
+        "fees": 1.45,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 151.45,
+        "fees_total": 2.89,
+        "slippage_total": 2.41,
+        "taxes_total": 0.48,
+        "net": 145.67,
+        "pct": 3.025,
+        "r_multiple": 1.12
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sun",
+        "month": "May",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 21.9,
+        "atr_14": 28.89
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.69,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0086",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-06-06T09:30:00+00:00",
+        "price": 2299.45,
+        "quantity": 500,
+        "value": 1149725.0,
+        "fees": 344.92,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-06-10T09:30:00+00:00",
+        "price": 2246.32,
+        "quantity": 500,
+        "value": 1123160.0,
+        "fees": 344.92,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -26563.93,
+        "fees_total": 689.83,
+        "slippage_total": 574.86,
+        "taxes_total": 114.97,
+        "net": -27943.59,
+        "pct": -2.4305,
+        "r_multiple": -0.9
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Sun",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.4,
+        "atr_14": 27.59
+      },
+      "mae_pct": -3.61,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0087",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-06-13T09:30:00+00:00",
+        "price": 568.31,
+        "quantity": 500,
+        "value": 284155.0,
+        "fees": 85.25,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-06-19T09:30:00+00:00",
+        "price": 553.72,
+        "quantity": 500,
+        "value": 276860.0,
+        "fees": 85.25,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -7293.41,
+        "fees_total": 170.49,
+        "slippage_total": 142.08,
+        "taxes_total": 28.42,
+        "net": -7634.4,
+        "pct": -2.6867,
+        "r_multiple": -1.0
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Sun",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 55.4,
+        "atr_14": 6.82
+      },
+      "mae_pct": -3.82,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0088",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-06-21T09:30:00+00:00",
+        "price": 154.02,
+        "quantity": 5,
+        "value": 770.1,
+        "fees": 0.23,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-06-28T09:30:00+00:00",
+        "price": 161.82,
+        "quantity": 5,
+        "value": 809.1,
+        "fees": 0.23,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 39.02,
+        "fees_total": 0.46,
+        "slippage_total": 0.39,
+        "taxes_total": 0.08,
+        "net": 38.09,
+        "pct": 4.9461,
+        "r_multiple": 1.83
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Mon",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 66.9,
+        "atr_14": 1.85
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 6.38,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0089",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-06-29T09:30:00+00:00",
+        "price": 720.47,
+        "quantity": 100,
+        "value": 72047.0,
+        "fees": 21.61,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-07-04T09:30:00+00:00",
+        "price": 751.95,
+        "quantity": 100,
+        "value": 75195.0,
+        "fees": 21.61,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 3147.69,
+        "fees_total": 43.23,
+        "slippage_total": 36.02,
+        "taxes_total": 7.2,
+        "net": 3061.24,
+        "pct": 4.2489,
+        "r_multiple": 1.57
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Tue",
+        "month": "Jun",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 77.1,
+        "atr_14": 8.65
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 6.16,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0090",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-07-06T09:30:00+00:00",
+        "price": 2224.3,
+        "quantity": 500,
+        "value": 1112150.0,
+        "fees": 333.64,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-07-10T09:30:00+00:00",
+        "price": 2172.89,
+        "quantity": 500,
+        "value": 1086445.0,
+        "fees": 333.64,
+        "slippage_bps": 5.0,
+        "reason": "time_stop",
+        "signal_type": "time_stop"
+      },
+      "pnl": {
+        "gross": -25704.99,
+        "fees_total": 667.29,
+        "slippage_total": 556.08,
+        "taxes_total": 111.22,
+        "net": -27039.58,
+        "pct": -2.4313,
+        "r_multiple": -0.9
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Tue",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 34.1,
+        "atr_14": 26.69
+      },
+      "mae_pct": -4.15,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0091",
+      "symbol": "RELIANCE.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-07-13T09:30:00+00:00",
+        "price": 2142.64,
+        "quantity": 1,
+        "value": 2142.64,
+        "fees": 0.65,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-07-20T09:30:00+00:00",
+        "price": 2132.69,
+        "quantity": 1,
+        "value": 2132.69,
+        "fees": 0.65,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": -9.95,
+        "fees_total": 1.29,
+        "slippage_total": 1.07,
+        "taxes_total": 0.21,
+        "net": -12.52,
+        "pct": -0.5843,
+        "r_multiple": -0.22
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "RELIANCE.NS",
+        "day_of_week": "Tue",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 43.9,
+        "atr_14": 25.71
+      },
+      "mae_pct": -2.15,
+      "mfe_pct": 0.23,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0092",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-07-27T09:30:00+00:00",
+        "price": 309.19,
+        "quantity": 2,
+        "value": 618.38,
+        "fees": 0.18,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-07-30T09:30:00+00:00",
+        "price": 318.27,
+        "quantity": 2,
+        "value": 636.54,
+        "fees": 0.18,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": 18.17,
+        "fees_total": 0.37,
+        "slippage_total": 0.31,
+        "taxes_total": 0.06,
+        "net": 17.43,
+        "pct": 2.8187,
+        "r_multiple": 1.04
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Tue",
+        "month": "Jul",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 57.5,
+        "atr_14": 3.71
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.8,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0093",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-08-06T09:30:00+00:00",
+        "price": 1729.48,
+        "quantity": 2,
+        "value": 3458.96,
+        "fees": 1.04,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-08-12T09:30:00+00:00",
+        "price": 1797.55,
+        "quantity": 2,
+        "value": 3595.1,
+        "fees": 1.04,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 136.14,
+        "fees_total": 2.08,
+        "slippage_total": 1.73,
+        "taxes_total": 0.35,
+        "net": 131.98,
+        "pct": 3.8156,
+        "r_multiple": 1.41
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Fri",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 74.1,
+        "atr_14": 20.75
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.42,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0094",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-08-17T09:30:00+00:00",
+        "price": 1714.14,
+        "quantity": 200,
+        "value": 342828.0,
+        "fees": 102.85,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-08-24T09:30:00+00:00",
+        "price": 1761.6,
+        "quantity": 200,
+        "value": 352320.0,
+        "fees": 102.85,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 9491.55,
+        "fees_total": 205.7,
+        "slippage_total": 171.41,
+        "taxes_total": 34.28,
+        "net": 9080.16,
+        "pct": 2.6486,
+        "r_multiple": 0.98
+      },
+      "holding": {
+        "bars": 7,
+        "calendar_days": 7,
+        "trading_days": 7
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Tue",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 62.4,
+        "atr_14": 20.57
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 3.75,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0095",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-08-26T09:30:00+00:00",
+        "price": 146.67,
+        "quantity": 10,
+        "value": 1466.7,
+        "fees": 0.44,
+        "slippage_bps": 5.0,
+        "reason": "signal_pullback",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-08-28T09:30:00+00:00",
+        "price": 150.27,
+        "quantity": 10,
+        "value": 1502.7,
+        "fees": 0.44,
+        "slippage_bps": 5.0,
+        "reason": "take_profit",
+        "signal_type": "take_profit"
+      },
+      "pnl": {
+        "gross": 35.97,
+        "fees_total": 0.88,
+        "slippage_total": 0.73,
+        "taxes_total": 0.15,
+        "net": 34.21,
+        "pct": 2.3324,
+        "r_multiple": 0.86
+      },
+      "holding": {
+        "bars": 2,
+        "calendar_days": 2,
+        "trading_days": 2
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Thu",
+        "month": "Aug",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 43.2,
+        "atr_14": 1.76
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 2.98,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0096",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-09-01T09:30:00+00:00",
+        "price": 988.05,
+        "quantity": 10,
+        "value": 9880.5,
+        "fees": 2.96,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-09-06T09:30:00+00:00",
+        "price": 964.61,
+        "quantity": 10,
+        "value": 9646.1,
+        "fees": 2.96,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": -234.39,
+        "fees_total": 5.93,
+        "slippage_total": 4.94,
+        "taxes_total": 0.99,
+        "net": -246.25,
+        "pct": -2.4923,
+        "r_multiple": -0.92
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Wed",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 78.9,
+        "atr_14": 11.86
+      },
+      "mae_pct": -4.24,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0097",
+      "symbol": "INFY.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-09-07T09:30:00+00:00",
+        "price": 2115.62,
+        "quantity": 50,
+        "value": 105781.0,
+        "fees": 31.73,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-09-13T09:30:00+00:00",
+        "price": 2196.17,
+        "quantity": 50,
+        "value": 109808.5,
+        "fees": 31.73,
+        "slippage_bps": 5.0,
+        "reason": "exit_signal",
+        "signal_type": "exit_signal"
+      },
+      "pnl": {
+        "gross": 4027.38,
+        "fees_total": 63.47,
+        "slippage_total": 52.89,
+        "taxes_total": 10.58,
+        "net": 3900.44,
+        "pct": 3.6873,
+        "r_multiple": 1.37
+      },
+      "holding": {
+        "bars": 6,
+        "calendar_days": 6,
+        "trading_days": 6
+      },
+      "filters_at_entry": {
+        "symbol": "INFY.NS",
+        "day_of_week": "Tue",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 49.7,
+        "atr_14": 25.39
+      },
+      "mae_pct": 0.0,
+      "mfe_pct": 5.09,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0098",
+      "symbol": "TCS.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-09-19T09:30:00+00:00",
+        "price": 2227.93,
+        "quantity": 10,
+        "value": 22279.3,
+        "fees": 6.68,
+        "slippage_bps": 5.0,
+        "reason": "signal_rsi_oversold",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-09-23T09:30:00+00:00",
+        "price": 2177.25,
+        "quantity": 10,
+        "value": 21772.5,
+        "fees": 6.68,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -506.76,
+        "fees_total": 13.37,
+        "slippage_total": 11.14,
+        "taxes_total": 2.23,
+        "net": -533.5,
+        "pct": -2.3946,
+        "r_multiple": -0.89
+      },
+      "holding": {
+        "bars": 4,
+        "calendar_days": 4,
+        "trading_days": 4
+      },
+      "filters_at_entry": {
+        "symbol": "TCS.NS",
+        "day_of_week": "Sun",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 59.3,
+        "atr_14": 26.74
+      },
+      "mae_pct": -2.88,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0099",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-09-24T09:30:00+00:00",
+        "price": 706.55,
+        "quantity": 2,
+        "value": 1413.1,
+        "fees": 0.42,
+        "slippage_bps": 5.0,
+        "reason": "signal_ema_cross",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-09-29T09:30:00+00:00",
+        "price": 705.38,
+        "quantity": 2,
+        "value": 1410.76,
+        "fees": 0.42,
+        "slippage_bps": 5.0,
+        "reason": "trailing_stop",
+        "signal_type": "trailing_stop"
+      },
+      "pnl": {
+        "gross": -2.34,
+        "fees_total": 0.85,
+        "slippage_total": 0.71,
+        "taxes_total": 0.14,
+        "net": -4.04,
+        "pct": -0.2859,
+        "r_multiple": -0.11
+      },
+      "holding": {
+        "bars": 5,
+        "calendar_days": 5,
+        "trading_days": 5
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Fri",
+        "month": "Sep",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 41.0,
+        "atr_14": 8.48
+      },
+      "mae_pct": -1.58,
+      "mfe_pct": 1.06,
+      "tags": [],
+      "notes": ""
+    },
+    {
+      "id": "T-0100",
+      "symbol": "HDFCBANK.NS",
+      "instrument_type": "equity",
+      "side": "long",
+      "entry": {
+        "timestamp": "2027-10-07T09:30:00+00:00",
+        "price": 1213.42,
+        "quantity": 10,
+        "value": 12134.2,
+        "fees": 3.64,
+        "slippage_bps": 5.0,
+        "reason": "signal_breakout",
+        "signal_type": "entry_long"
+      },
+      "exit": {
+        "timestamp": "2027-10-10T09:30:00+00:00",
+        "price": 1190.34,
+        "quantity": 10,
+        "value": 11903.4,
+        "fees": 3.64,
+        "slippage_bps": 5.0,
+        "reason": "stop_loss",
+        "signal_type": "stop_loss"
+      },
+      "pnl": {
+        "gross": -230.79,
+        "fees_total": 7.28,
+        "slippage_total": 6.07,
+        "taxes_total": 1.21,
+        "net": -245.35,
+        "pct": -2.022,
+        "r_multiple": -0.75
+      },
+      "holding": {
+        "bars": 3,
+        "calendar_days": 3,
+        "trading_days": 3
+      },
+      "filters_at_entry": {
+        "symbol": "HDFCBANK.NS",
+        "day_of_week": "Thu",
+        "month": "Oct",
+        "session": "regular"
+      },
+      "indicators_at_entry": {
+        "rsi_14": 51.8,
+        "atr_14": 14.56
+      },
+      "mae_pct": -3.38,
+      "mfe_pct": 0.0,
+      "tags": [],
+      "notes": ""
     }
   ],
-
   "disclaimer": "Past performance is not indicative of future results. Backtests are based on assumptions and historical data; live execution may differ materially. Content provided is not investment advice.",
-
   "extras": {
-    "custom_metrics": {
-      "avg_position_size_pct_of_portfolio": 8.1,
-      "median_winner_pct": 1.96,
-      "median_loser_pct": -1.32
-    },
-    "notes": "Run on adjusted prices with corporate actions handled at source.",
-    "links": [
-      { "label": "Strategy document",       "url": "https://..." },
-      { "label": "Original backtest log",   "url": "https://..." }
-    ]
+    "regime": "bull",
+    "generator": "ifa-exhaustive-tests-v1"
+  },
+  "client": {
+    "client_id": "C-014",
+    "client_name": "Sterling Capital Advisors"
   }
 }

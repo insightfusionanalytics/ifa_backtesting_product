@@ -26,14 +26,51 @@ def init_firebase() -> None:
     logger.info("Firebase Admin initialised for project {}", settings.FIREBASE_PROJECT_ID)
 
 
+# Map Firebase Admin SDK exception types → public-facing reason codes.
+# Internals (cryptographic detail, raw exception messages) NEVER reach the client.
+_FIREBASE_REASONS = {
+    fb_auth.ExpiredIdTokenError: "token_expired",
+    fb_auth.RevokedIdTokenError: "token_revoked",
+    fb_auth.InvalidIdTokenError: "token_invalid",
+    fb_auth.UserDisabledError: "user_disabled",
+    fb_auth.CertificateFetchError: "auth_service_unavailable",
+}
+
+
+class TokenError(ValueError):
+    """Public-safe auth error. .reason is a short opaque code; .message is for logs only."""
+
+    def __init__(self, reason: str, message: str = "") -> None:
+        self.reason = reason
+        self.message = message
+        super().__init__(reason)
+
+
 def verify_id_token(id_token: str) -> dict:
-    """Verifies the Firebase ID token. Raises ValueError on failure."""
+    """Verifies a Firebase ID token.
+
+    Returns the decoded claims dict on success. On failure raises ``TokenError``
+    with a short, opaque ``reason`` code. Internal exception details are logged
+    server-side only — never propagated to the client.
+    """
     if not _initialised:
         init_firebase()
+    if not id_token or not isinstance(id_token, str):
+        raise TokenError("token_missing", "empty or non-string token")
     try:
         return fb_auth.verify_id_token(id_token)
+    except tuple(_FIREBASE_REASONS) as e:
+        reason = _FIREBASE_REASONS[type(e)]
+        logger.warning("Firebase auth rejected: reason={} type={} detail={}", reason, type(e).__name__, str(e)[:200])
+        raise TokenError(reason, str(e)) from e
+    except ValueError as e:
+        # firebase_admin raises plain ValueError for many malformed-token cases
+        logger.warning("Firebase auth ValueError: {}", str(e)[:200])
+        raise TokenError("token_invalid", str(e)) from e
     except Exception as e:
-        raise ValueError(f"Invalid Firebase ID token: {e}") from e
+        # Defence in depth: any unexpected exception still surfaces as opaque
+        logger.exception("Unexpected Firebase verify failure")
+        raise TokenError("token_invalid", str(e)) from e
 
 
 def create_firebase_user(email: str, password: str, display_name: str | None = None) -> str:

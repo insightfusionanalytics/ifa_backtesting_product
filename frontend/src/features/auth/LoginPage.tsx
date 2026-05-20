@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../lib/firebase";
 import { fetchMe } from "../../lib/api";
+import { friendlyAuthError } from "../../lib/authErrors";
 import { useAuth } from "../../store/auth";
 
 export default function LoginPage() {
@@ -25,8 +26,8 @@ export default function LoginPage() {
       if (isAdmin) navigate("/admin");
       else if (me.needs_tnc_acceptance) navigate("/terms");
       else navigate("/");
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? err?.message ?? "Login failed");
+    } catch (err: unknown) {
+      setError(friendlyAuthError(err));
     } finally {
       setSubmitting(false);
     }

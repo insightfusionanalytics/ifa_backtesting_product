@@ -29,7 +29,7 @@ ADMIN_EMAIL = "insightfusionanalytics@gmail.com"
 ADMIN_PASSWORD = "ChangeMeOnFirstLogin!"
 BAD_PASSWORD = "wrongpassword"
 
-REPO_ROOT = Path(__file__).resolve().parents[2].parent
+REPO_ROOT = Path(__file__).resolve().parents[2]  # ifa-backtest-product/
 BACKTEST_EXAMPLE = REPO_ROOT / "schemas" / "backtest.example.json"
 
 SCREENSHOT_DIR = Path(__file__).parent / "screenshots"
@@ -214,10 +214,15 @@ def test_overview_page(driver, run: TestRun) -> None:
         for label in ["active backtests", "completed", "pending quotes", "open requests"]:
             run.record(f"stat tile '{label}'", label in body.lower())
 
-        # Demo callout — check via the textContent (not innerText, which truncates with CSS)
-        body_html = driver.find_element(By.TAG_NAME, "body").get_attribute("innerHTML").lower()
-        run.record("demo backtest callout visible",
-                   "demo:" in body_html and "ema 20/50" in body_html)
+        # Demo callout — wait for backtests fetch + render to complete
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda d: "demo:" in d.find_element(By.TAG_NAME, "body").get_attribute("innerHTML").lower()
+                          and "ema 20/50" in d.find_element(By.TAG_NAME, "body").get_attribute("innerHTML").lower()
+            )
+            run.record("demo backtest callout visible", True)
+        except Exception:
+            run.record("demo backtest callout visible", False, "timed out waiting for demo callout to render")
 
         # Open results button
         open_results = next(
@@ -369,13 +374,19 @@ def test_backtests_list(driver, run: TestRun) -> None:
         completed_chip = next((c for c in chips if c.text.strip().lower() == "completed"), None)
         if completed_chip:
             completed_chip.click()
-            time.sleep(0.7)
-            body = driver.find_element(By.TAG_NAME, "body").text
-            # Should still have BT-2026-0001 but not 0002 (in_progress)
-            still_has = "BT-2026-0001" in body
-            no_in_prog = "BT-2026-0002" not in body
-            run.record("'completed' filter shows only completed", still_has and no_in_prog,
-                       f"completed: {still_has}, in_prog filtered: {no_in_prog}")
+            # Wait for filter to apply — BT-2026-0002 (in_progress) should disappear
+            try:
+                WebDriverWait(driver, 10).until(
+                    lambda d: "BT-2026-0002" not in d.find_element(By.TAG_NAME, "body").text
+                              and "BT-2026-0001" in d.find_element(By.TAG_NAME, "body").text
+                )
+                run.record("'completed' filter shows only completed", True)
+            except Exception:
+                body = driver.find_element(By.TAG_NAME, "body").text
+                still_has = "BT-2026-0001" in body
+                no_in_prog = "BT-2026-0002" not in body
+                run.record("'completed' filter shows only completed", False,
+                           f"timed out — has 0001: {still_has}, missing 0002: {no_in_prog}")
 
         # Reset to 'all' for next test
         all_chip = next((c for c in chips if c.text.strip().lower() == "all"), None)
@@ -424,8 +435,11 @@ def test_backtest_detail(driver, run: TestRun) -> None:
 
         # Trade log
         run.record("Trade log section visible", "trade log" in body.lower())
-        run.record("Trade T-0421 visible", "T-0421" in body)
-        run.record("Trade T-0420 visible", "T-0420" in body)
+        # Trade IDs are T-NNNN; check for any 4-digit T-prefixed ID rather than two specific ones.
+        import re
+        trade_ids = re.findall(r"T-\d{4}", body)
+        run.record("≥1 trade row with T-NNNN id visible", len(trade_ids) >= 1, f"{len(trade_ids)} found")
+        run.record("≥2 trade rows visible", len(trade_ids) >= 2, f"{len(trade_ids)} found")
         run.record("Disclaimer visible", "past performance" in body.lower())
 
         # Back button
@@ -498,8 +512,9 @@ def test_avatar_logout(driver, run: TestRun) -> None:
 
 
 def reset_db_state() -> None:
-    """Wipe demo-client T&C acceptances + recent test-noise (requests, test-uploaded backtests)."""
-    from sqlalchemy import create_engine
+    """Wipe demo-client T&C acceptances + recent test-noise (requests, all test-prefixed backtests).
+    Removes BT-SYN-*, BT-EDGE-*, TEST-* prefixes so filter/list tests work cleanly."""
+    from sqlalchemy import create_engine, or_
     from sqlalchemy.orm import sessionmaker
     from app.core.config import get_settings
     from app.db.models import Backtest, BacktestFile, Request as Req, TermsAcceptance, User
@@ -510,9 +525,14 @@ def reset_db_state() -> None:
     if demo:
         n1 = s.query(TermsAcceptance).filter(TermsAcceptance.user_id == demo.id).delete()
         n2 = s.query(Req).filter(Req.client_id == demo.client_id).delete()
-        # Drop any TEST- prefixed backtests + their files
+        # Drop any test-prefix backtests + their files
         test_bts = s.query(Backtest).filter(
-            Backtest.client_id == demo.client_id, Backtest.code.startswith("TEST-")
+            Backtest.client_id == demo.client_id,
+            or_(
+                Backtest.code.startswith("TEST-"),
+                Backtest.code.startswith("BT-SYN-"),
+                Backtest.code.startswith("BT-EDGE-"),
+            ),
         ).all()
         n3 = len(test_bts)
         for bt in test_bts:
@@ -657,14 +677,23 @@ def test_admin_backtest_upload(driver, run: TestRun) -> None:
         example["backtest_id"] = f"TEST-BT-{ts}"
         example["strategy"]["name"] = f"Selenium test backtest {ts}"
         textarea = driver.find_element(By.TAG_NAME, "textarea")
-        # Use a paste-like injection via execute_script (send_keys is too slow for 12kb)
+        payload_json = json.dumps(example)
+        # Inject the value via the React-aware path (native prototype setter + input event)
         driver.execute_script("""
             const el = arguments[0];
             const v = arguments[1];
             const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
             setter.call(el, v);
             el.dispatchEvent(new Event('input', { bubbles: true }));
-        """, textarea, json.dumps(example))
+        """, textarea, payload_json)
+
+        # Wait for React to flush state — verify the char count display updated
+        try:
+            WebDriverWait(driver, 5).until(
+                lambda d: f"{len(payload_json)} chars" in d.find_element(By.TAG_NAME, "body").text
+            )
+        except Exception:
+            time.sleep(1.5)  # fallback if char-count text isn't present
 
         # Click upload
         upload_btn = next(b for b in driver.find_elements(By.TAG_NAME, "button") if "validate" in b.text.lower())
@@ -699,13 +728,25 @@ def test_admin_audit(driver, run: TestRun) -> None:
         if not ok:
             take_screenshot(driver, "admin_audit_fail")
             return
-        # Wait for table rows to actually populate (audit data is fetched async)
         WebDriverWait(driver, 10).until(
             lambda d: len(d.find_elements(By.CSS_SELECTOR, "tbody tr")) > 0
         )
+
+        # Use the filter input to find specific actions (audit returns last 100;
+        # tnc.accept may be ranked off if there's been heavy backtest upload activity)
+        filter_input = driver.find_element(By.CSS_SELECTOR, "input[placeholder*='Filter by action prefix']")
+        filter_input.clear()
+        filter_input.send_keys("tnc.")
+        # Wait for re-fetch
+        time.sleep(1.0)
         body = driver.find_element(By.TAG_NAME, "body").text.lower()
-        run.record("audit has tnc.accept entries", "tnc.accept" in body)
-        run.record("audit has backtest upload entries", "backtest.result.upload" in body)
+        run.record("audit filter 'tnc.' finds entries", "tnc." in body and "tnc.accept" in body)
+
+        filter_input.clear()
+        filter_input.send_keys("backtest.result.upload")
+        time.sleep(1.0)
+        body = driver.find_element(By.TAG_NAME, "body").text.lower()
+        run.record("audit filter 'backtest.result.upload' finds entries", "backtest.result.upload" in body)
     except Exception as e:
         run.record("admin audit", False, str(e)[:120])
 

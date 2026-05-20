@@ -63,6 +63,21 @@ def upload_backtest_result(
             detail={"error": "Schema validation failed", "violations": violations},
         )
 
+    # 1b. Cross-field consistency: trade list length must match summary n_trades
+    summary = payload.result.get("metrics", {}).get("summary", {})
+    trades = payload.result.get("trades", [])
+    if "n_trades" in summary and summary["n_trades"] != len(trades):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "Internal consistency check failed",
+                "violations": [{
+                    "path": "metrics.summary.n_trades",
+                    "message": f"summary.n_trades={summary['n_trades']} but len(trades)={len(trades)}",
+                }],
+            },
+        )
+
     # 2. Resolve target client
     client_uuid = uuid.UUID(payload.client_id)
     client = db.query(Client).filter(Client.id == client_uuid, Client.deleted_at.is_(None)).first()

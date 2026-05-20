@@ -1,0 +1,77 @@
+{
+  "SUCCESS": {
+    "kind": "str",
+    "localId": "str",
+    "email": "str",
+    "displayName": "str",
+    "idToken": "str",
+    "registered": "bool",
+    "refreshToken": "str",
+    "expiresIn": "str"
+  },
+  "BAD_EMAIL": {
+    "error": {
+      "code": 400,
+      "message": "INVALID_LOGIN_CREDENTIALS",
+      "errors": [
+        {
+          "message": "INVALID_LOGIN_CREDENTIALS",
+          "domain": "global",
+          "reason": "invalid"
+        }
+      ]
+    }
+  },
+  "BAD_PASSWORD": {
+    "error": {
+      "code": 400,
+      "message": "INVALID_LOGIN_CREDENTIALS",
+      "errors": [
+        {
+          "message": "INVALID_LOGIN_CREDENTIALS",
+          "domain": "global",
+          "reason": "invalid"
+        }
+      ]
+    }
+  },
+  "MALFORMED_EMAIL": {
+    "error": {
+      "code": 400,
+      "message": "INVALID_EMAIL",
+      "errors": [
+        {
+          "message": "INVALID_EMAIL",
+          "domain": "global",
+          "reason": "invalid"
+        }
+      ]
+    }
+  },
+  "MISSING_PASSWORD": {
+    "error": {
+      "code": 400,
+      "message": "MISSING_PASSWORD",
+      "errors": [
+        {
+          "message": "MISSING_PASSWORD",
+          "domain": "global",
+          "reason": "invalid"
+        }
+      ]
+    }
+  },
+  "EMPTY_EMAIL": {
+    "error": {
+      "code": 400,
+      "message": "INVALID_EMAIL",
+      "errors": [
+        {
+          "message": "INVALID_EMAIL",
+          "domain": "global",
+          "reason": "invalid"
+        }
+      ]
+    }
+  }
+}
