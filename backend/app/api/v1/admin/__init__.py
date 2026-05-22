@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.admin import audit, backtests, client_requests, clients, inbox, notifications, stats, strategies, terms
+from app.api.v1.admin import audit, backtests, client_requests, clients, inbox, notifications, stats, strategies, terms, vam
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 admin_router.include_router(stats.router)
@@ -12,3 +12,4 @@ admin_router.include_router(backtests.router)
 admin_router.include_router(terms.router)
 admin_router.include_router(notifications.router)
 admin_router.include_router(audit.router)
+admin_router.include_router(vam.router)

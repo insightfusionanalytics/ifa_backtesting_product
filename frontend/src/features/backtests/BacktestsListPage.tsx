@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { Eye, RefreshCw } from "lucide-react";
+import { Eye, Play, RefreshCw } from "lucide-react";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui";
 import { fetchBacktests, type BacktestListItem } from "../../lib/api";
 import { usePolling } from "../../lib/usePolling";
@@ -27,9 +27,17 @@ export default function BacktestsListPage() {
               : "All runs submitted on behalf of your organisation."
           }
           action={
-            <button onClick={refresh} className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1">
-              <RefreshCw size={12}/> Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={refresh}
+                className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1"
+              >
+                <RefreshCw size={12}/> Refresh
+              </button>
+              <Link to="/backtests/new">
+                <Button variant="accent" icon={<Play size={14}/>}>New backtest</Button>
+              </Link>
+            </div>
           }
         >
           Backtests

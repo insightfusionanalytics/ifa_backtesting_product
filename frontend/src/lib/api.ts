@@ -352,3 +352,175 @@ export async function getStrategyDownloadUrl(strategyId: string): Promise<string
   );
   return r.data.signed_url;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// VAM (Volatility-Adjusted Momentum) engine — proxied through our backend.
+// Both admin and client routes return the same response shapes; the only
+// difference is which endpoint family they hit and what they're allowed to do.
+// ───────────────────────────────────────────────────────────────────────────
+
+export type VamStepId = "step1" | "step2" | "step3" | "step4_svix" | "step4_combined";
+
+export type VamStrategy = {
+  id: VamStepId | string;
+  name: string;
+  implemented: boolean;
+  // VAM may include additional fields (assets, description) we just preserve as-is
+  [extra: string]: unknown;
+};
+
+export type VamParamSchemaField = {
+  name: string;
+  type: "int" | "float" | "bool" | "enum" | "date" | string;
+  default: unknown;
+  min?: number;
+  max?: number;
+  options?: string[];        // populated for type === "enum"
+  description?: string;
+};
+
+export type VamStepSchema = {
+  step_id?: string;
+  parameters: VamParamSchemaField[];
+  [extra: string]: unknown;
+};
+
+export type VamSymbol = {
+  symbol: string;
+  start: string;             // YYYY-MM-DD
+  end: string;               // YYYY-MM-DD
+  [extra: string]: unknown;
+};
+
+export type VamTimeValuePoint = { time: string; value: number };
+
+export type VamMarker = {
+  time: string;
+  position?: string;
+  color?: string;
+  shape?: string;
+  text?: string;
+};
+
+export type VamChartData = {
+  equity?: VamTimeValuePoint[];
+  spy?: VamTimeValuePoint[];
+  sma50?: VamTimeValuePoint[];
+  sma200?: VamTimeValuePoint[];
+  vix?: VamTimeValuePoint[];
+  svix?: VamTimeValuePoint[];
+  markers?: VamMarker[];
+};
+
+export type VamTradeAction = {
+  execution_date: string;
+  action: string;            // contains BUY / SELL — VAM may compose ("BUY UPRO")
+  instrument: string;
+  state_from?: string | null;
+  state_to?: string | null;
+  exec_price?: number | null;
+  trade_value_dollars?: number | null;
+  portfolio_value_at_close?: number | null;
+  trigger_reason?: string | null;
+  [extra: string]: unknown;
+};
+
+export type VamMetrics = {
+  final_value?: number;
+  total_return_pct?: number;
+  cagr_pct?: number;
+  sharpe?: number;
+  sharpe_ratio?: number;
+  sortino?: number;
+  sortino_ratio?: number;
+  calmar?: number;
+  calmar_ratio?: number;
+  max_drawdown_pct?: number;
+  max_drawdown_date?: string;
+  total_trades?: number;
+  years?: number;
+  start_date?: string;
+  end_date?: string;
+  alpha_vs_spy_pct?: number;
+  [extra: string]: unknown;
+};
+
+export type VamRunResponse = {
+  backtest_id: string;       // our internal code, BT-...
+  code: string;
+  name: string;
+  storage_key: string;
+};
+
+// Full envelope we persist + fetch back on the detail page (mirrors backtest.vam.schema.json)
+export type VamPersistedBacktest = {
+  schema_version: "vam-1.0";
+  result_type: "vam_backtest";
+  backtest_id: string;
+  source: "vam";
+  step: VamStepId | string;
+  params: Record<string, unknown>;
+  created_at: string;
+  client: { client_id: string; client_name: string };
+  triggered_by?: { actor_type: "admin" | "client"; actor_id: string; actor_email?: string };
+  engine_response: {
+    cached?: boolean;
+    metrics: VamMetrics;
+    trades: VamTradeAction[];
+    chart_data: VamChartData;
+    [extra: string]: unknown;
+  };
+};
+
+// ── Listing + schema (proxied, available to both admins and clients) ────────
+
+/** Use the client-facing path; admins are also signed-in users so this works for them too. */
+export async function fetchVamStrategies(): Promise<VamStrategy[]> {
+  const r = await api.get<VamStrategy[]>(`/vam/strategies`);
+  return r.data;
+}
+
+export async function fetchVamSchema(stepId: string): Promise<VamStepSchema> {
+  const r = await api.get<VamStepSchema>(`/vam/strategies/${stepId}/schema`);
+  return r.data;
+}
+
+export async function fetchVamSymbols(): Promise<VamSymbol[]> {
+  const r = await api.get<VamSymbol[]>(`/vam/symbols`);
+  return r.data;
+}
+
+// ── Admin-only (data info + engine-health probe) ────────────────────────────
+
+export async function fetchVamDataInfo(): Promise<unknown> {
+  const r = await api.get(`/admin/vam/data-info`);
+  return r.data;
+}
+
+export async function fetchVamProfile(): Promise<unknown> {
+  const r = await api.get(`/admin/vam/profile`);
+  return r.data;
+}
+
+// ── Run a backtest ──────────────────────────────────────────────────────────
+
+/** Client self-serve: server pins client_id from session. */
+export async function runVamAsClient(args: {
+  step: VamStepId | string;
+  params: Record<string, unknown>;
+  strategy_id?: string | null;
+}): Promise<VamRunResponse> {
+  const r = await api.post<VamRunResponse>(`/vam/run`, args);
+  return r.data;
+}
+
+/** Admin runs for a specified client (body includes client_id). */
+export async function runVamAsAdmin(args: {
+  client_id: string;
+  step: VamStepId | string;
+  params: Record<string, unknown>;
+  strategy_id?: string | null;
+}): Promise<VamRunResponse> {
+  const r = await api.post<VamRunResponse>(`/admin/vam/run`, args);
+  return r.data;
+}

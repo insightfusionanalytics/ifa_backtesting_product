@@ -9,6 +9,7 @@ import StrategiesPage from "./features/strategies/StrategiesPage";
 import RequestsPage from "./features/requests/RequestsPage";
 import BacktestsListPage from "./features/backtests/BacktestsListPage";
 import BacktestDetailPage from "./features/backtests/BacktestDetailPage";
+import ClientRunBacktestPage from "./features/vam/ClientRunBacktestPage";
 import TermsAcceptPage from "./features/terms/TermsAcceptPage";
 import AdminLayout from "./components/AdminLayout";
 import AdminPulsePage from "./features/admin/AdminPulsePage";
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="strategies" element={<StrategiesPage />} />
           <Route path="requests" element={<RequestsPage />} />
           <Route path="backtests" element={<BacktestsListPage />} />
+          <Route path="backtests/new" element={<ClientRunBacktestPage />} />
           <Route path="backtests/:id" element={<BacktestDetailPage />} />
         </Route>
 

@@ -39,12 +39,30 @@ class Settings(BaseSettings):
     #   ALLOWED_ORIGINS=https://app.example.com,https://app-staging.example.com
     ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # VAM (Volatility-Adjusted Momentum) engine — see backtestravi.insightfusionanalytics.com
+    # Our backend logs into VAM once with these credentials and uses the resulting bearer
+    # token to proxy run-backtest calls on behalf of admins AND clients. Clients never see
+    # the VAM URL or token; everything is server-to-server.
+    VAM_BASE_URL: str = "https://backtestravi.insightfusionanalytics.com"
+    VAM_ADMIN_EMAIL: str = ""
+    VAM_ADMIN_PASSWORD: str = ""
+
+    # Per-client rate limit for client-triggered VAM runs (admins are not rate-limited).
+    # Defaults to 5 runs / minute / client — enough to iterate on a slider, low enough
+    # that an abusive client can't DOS VAM.
+    VAM_CLIENT_RUNS_PER_MINUTE: int = 5
+
     # Observability
     SENTRY_DSN_BACKEND: str = ""
 
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def vam_configured(self) -> bool:
+        """True when both VAM credentials are present. Endpoints return 503 if False."""
+        return bool(self.VAM_ADMIN_EMAIL) and bool(self.VAM_ADMIN_PASSWORD)
 
 
 @lru_cache

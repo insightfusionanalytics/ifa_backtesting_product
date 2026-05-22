@@ -20,6 +20,11 @@ class Backtest(UUIDPKMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     code: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="draft")
+    # Which engine produced this row. Drives the frontend renderer choice:
+    #   "manual" → existing v1.0 schema renderer (backtest.schema.json)
+    #   "vam"    → VAM-native renderer (backtest.vam.schema.json)
+    # Default 'manual' preserves all historical rows.
+    engine: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")
     assumptions: Mapped[dict | None] = mapped_column(JSONB)
     metrics: Mapped[dict | None] = mapped_column(JSONB)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -28,6 +33,10 @@ class Backtest(UUIDPKMixin, TimestampMixin, Base):
         CheckConstraint(
             "status IN ('draft','quote_requested','quote_sent','approved','in_progress','completed','revision_requested','cancelled')",
             name="backtest_status_valid",
+        ),
+        CheckConstraint(
+            "engine IN ('manual','vam')",
+            name="backtest_engine_valid",
         ),
         Index("ix_backtests_client_status", "client_id", "status"),
     )
