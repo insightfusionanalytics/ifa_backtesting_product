@@ -1,0 +1,69 @@
+# Render Blueprint for the IFA Backtest Product backend.
+#
+# Push this file + the rest of the repo to GitHub, then in the Render
+# dashboard: New > Blueprint > pick the repo. Render reads this file
+# and provisions the service automatically.
+#
+# Free tier note: web services on the free plan spin down after 15 min
+# of inactivity (~30-60s cold start on first hit). Upgrade `plan` to
+# `starter` ($7/mo) for always-on.
+
+services:
+  - type: web
+    name: ifa-backtest-backend
+    runtime: docker
+    plan: free
+    region: oregon                  # change to singapore / frankfurt etc. if closer
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .                # repo root — Dockerfile assumes this
+    healthCheckPath: /healthz
+    autoDeploy: true                # redeploy on every push to main
+
+    # Run Alembic migrations before each new image becomes live.
+    # If migrations fail, Render aborts the deploy and keeps the previous version.
+    preDeployCommand: "cd /app/backend && alembic upgrade head"
+
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: ifa-backtest-product
+      - key: API_PREFIX
+        value: /api/v1
+
+      # CORS — comma-separated list of allowed origins.
+      # After the Vercel deploy lands, set this to the Vercel domain (and any preview domains).
+      # Sync=false so the value is set per-environment in the Render dashboard.
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+      # ── Supabase ──
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: ifa-private
+      - key: DATABASE_URL_SYNC
+        sync: false
+
+      # ── Firebase ──
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      # Mount the service-account JSON via Render's "Secret Files" feature
+      # (Dashboard > Service > Environment > Secret Files). Path below must
+      # match where you mount it.
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: /etc/secrets/firebase-admin.json
+
+      # ── Admin bootstrap (only used by seed scripts, safe to leave blank in prod) ──
+      - key: MAIN_ADMIN_EMAIL
+        sync: false
+      - key: MAIN_ADMIN_INITIAL_PASSWORD
+        sync: false
+
+      # ── Observability ──
+      - key: SENTRY_DSN_BACKEND
+        sync: false

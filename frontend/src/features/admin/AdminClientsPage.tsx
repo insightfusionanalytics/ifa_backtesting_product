@@ -1,28 +1,44 @@
-import { useEffect, useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { BadgeCheck, Download, FileText, MessageSquare, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { Badge, Button, Card, Modal, SectionTitle } from "../../components/ui";
 import {
   type AdminClient,
+  type AdminStrategy,
+  type ClientRequest,
   createAdminClient,
   deleteAdminClient,
   fetchAdminClients,
+  fetchClientRequests,
+  fetchClientStrategies,
+  getStrategyDownloadUrl,
   updateAdminClient,
 } from "../../lib/api";
+import { usePolling } from "../../lib/usePolling";
 
 export default function AdminClientsPage() {
-  const [rows, setRows] = useState<AdminClient[]>([]);
   const [selected, setSelected] = useState<AdminClient | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-
-  const refresh = () => fetchAdminClients().then(setRows).catch(() => setRows([]));
-  useEffect(() => { refresh(); }, []);
+  const fetcher = useCallback(() => fetchAdminClients(), []);
+  const { data, refresh, lastUpdated } = usePolling<AdminClient[]>(fetcher, 15_000);
+  const rows = data ?? [];
 
   return (
     <div className="space-y-6">
       <Card>
         <SectionTitle
-          sub="Provision new clients, change tiers, suspend or soft-delete."
-          action={<Button variant="accent" icon={<Plus size={15}/>} onClick={() => setCreateOpen(true)}>New client</Button>}
+          sub={
+            lastUpdated
+              ? `Provision new clients, change tiers, suspend or soft-delete · auto-refreshes · last ${lastUpdated.toLocaleTimeString()}`
+              : "Provision new clients, change tiers, suspend or soft-delete."
+          }
+          action={
+            <div className="flex items-center gap-3">
+              <button onClick={refresh} className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1">
+                <RefreshCw size={12}/> Refresh
+              </button>
+              <Button variant="accent" icon={<Plus size={15}/>} onClick={() => setCreateOpen(true)}>New client</Button>
+            </div>
+          }
         >
           Clients
         </SectionTitle>
@@ -71,6 +87,24 @@ function ClientDrawer({ client, onClose }: { client: AdminClient; onClose: () =>
   const [status, setStatus] = useState<AdminClient["status"]>(client.status);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [strategies, setStrategies] = useState<AdminStrategy[]>([]);
+  const [requests, setRequests] = useState<ClientRequest[]>([]);
+  const [stratsLoading, setStratsLoading] = useState(true);
+  const [reqsLoading, setReqsLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStratsLoading(true);
+    fetchClientStrategies(client.id)
+      .then(setStrategies)
+      .catch(() => setStrategies([]))
+      .finally(() => setStratsLoading(false));
+    setReqsLoading(true);
+    fetchClientRequests(client.id)
+      .then(setRequests)
+      .catch(() => setRequests([]))
+      .finally(() => setReqsLoading(false));
+  }, [client.id]);
 
   const save = async () => {
     setSaving(true);
@@ -91,6 +125,18 @@ function ClientDrawer({ client, onClose }: { client: AdminClient; onClose: () =>
     onClose();
   };
 
+  const openDownload = async (s: AdminStrategy) => {
+    setDownloading(s.id);
+    try {
+      const url = await getStrategyDownloadUrl(s.id);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      alert(e?.response?.data?.detail ?? "Failed to generate download link");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-ink-900/40 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-md bg-white dark:bg-ink-900 border-l border-ink-200 dark:border-ink-800 shadow-pop h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -103,7 +149,8 @@ function ClientDrawer({ client, onClose }: { client: AdminClient; onClose: () =>
             <X size={15}/>
           </button>
         </div>
-        <div className="p-6 space-y-4">
+
+        <div className="p-6 space-y-5">
           <div>
             <label className="text-xs font-medium text-ink-600 dark:text-ink-300">Tier</label>
             <select
@@ -127,6 +174,90 @@ function ClientDrawer({ client, onClose }: { client: AdminClient; onClose: () =>
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
             </select>
+          </div>
+
+          {/* Requests submitted by this client */}
+          <div className="pt-2 border-t border-ink-100 dark:border-ink-800">
+            <div className="text-xs font-medium text-ink-600 dark:text-ink-300 mb-2 flex items-center justify-between">
+              <span>Requests</span>
+              {requests.filter((r) => r.status === "open").length > 0 && (
+                <span className="text-[10px] px-1.5 h-4 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 inline-flex items-center font-semibold">
+                  {requests.filter((r) => r.status === "open").length} open
+                </span>
+              )}
+            </div>
+            {reqsLoading ? (
+              <div className="text-xs text-ink-500">Loading…</div>
+            ) : requests.length === 0 ? (
+              <div className="text-xs text-ink-500 italic">No requests yet.</div>
+            ) : (
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {requests.map((r) => {
+                  const summary = (r.payload.summary as string) || (r.payload.question as string) || (r.payload.details as string) || "(no summary)";
+                  return (
+                    <li key={r.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-ink-200 dark:border-ink-700">
+                      <span className="size-8 rounded-lg bg-ink-100 dark:bg-ink-800 flex items-center justify-center text-ink-500 shrink-0">
+                        <MessageSquare size={14}/>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium capitalize">{r.type.replace("_", " ")}</span>
+                          <Badge status={r.status} dot>{r.status.replace("_", " ")}</Badge>
+                        </div>
+                        <div className="text-xs text-ink-500 dark:text-ink-400 mt-0.5 break-words">{summary.slice(0, 200)}</div>
+                        <div className="text-[10px] text-ink-400 tabular mt-1">{new Date(r.submitted_at).toLocaleString()}</div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Strategies submitted by this client */}
+          <div className="pt-2 border-t border-ink-100 dark:border-ink-800">
+            <div className="text-xs font-medium text-ink-600 dark:text-ink-300 mb-2">
+              Strategy documents
+            </div>
+            {stratsLoading ? (
+              <div className="text-xs text-ink-500">Loading…</div>
+            ) : strategies.length === 0 ? (
+              <div className="text-xs text-ink-500 italic">No strategies uploaded yet.</div>
+            ) : (
+              <ul className="space-y-2">
+                {strategies.map((s) => (
+                  <li key={s.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-ink-200 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-800/30">
+                    <span className="size-8 rounded-lg bg-ink-100 dark:bg-ink-800 flex items-center justify-center text-ink-500 shrink-0">
+                      <FileText size={14}/>
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">{s.name}</span>
+                        {s.is_source_of_truth && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent-700 dark:text-accent-300">
+                            <BadgeCheck size={11}/> SoT
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-ink-500 tabular">
+                        v{s.version} · {s.size_bytes ? `${(s.size_bytes / 1024).toFixed(0)} KB` : "—"} · {new Date(s.uploaded_at).toLocaleDateString()}
+                      </div>
+                      <div className="text-[10px] text-ink-400 font-mono truncate" title={s.checksum ?? ""}>
+                        {s.checksum ? `sha256:${s.checksum.slice(0, 16)}…` : "checksum pending"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openDownload(s)}
+                      disabled={downloading === s.id || s.status !== "active"}
+                      className="shrink-0 text-xs font-medium text-accent-700 dark:text-accent-300 hover:underline disabled:opacity-40 disabled:no-underline inline-flex items-center gap-1"
+                    >
+                      <Download size={12}/>
+                      {downloading === s.id ? "Opening…" : "Open"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="pt-4 border-t border-ink-100 dark:border-ink-800 flex items-center justify-between">

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { BadgeCheck, FileText, Upload, UploadCloud } from "lucide-react";
+import { useCallback, useState } from "react";
+import { BadgeCheck, FileText, RefreshCw, Upload, UploadCloud } from "lucide-react";
 import { Badge, Button, Card, Modal, SectionTitle } from "../../components/ui";
 import { fetchStrategies, finalizeStrategyUpload, initStrategyUpload, type Strategy } from "../../lib/api";
+import { usePolling } from "../../lib/usePolling";
 
 async function sha256(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
@@ -12,18 +13,28 @@ async function sha256(file: File): Promise<string> {
 }
 
 export default function StrategiesPage() {
-  const [rows, setRows] = useState<Strategy[]>([]);
   const [modal, setModal] = useState(false);
-
-  const refresh = () => fetchStrategies().then(setRows).catch(() => setRows([]));
-  useEffect(() => { refresh(); }, []);
+  const fetcher = useCallback(() => fetchStrategies(), []);
+  const { data, refresh, lastUpdated } = usePolling<Strategy[]>(fetcher, 15_000);
+  const rows = data ?? [];
 
   return (
     <div className="space-y-6">
       <Card>
         <SectionTitle
-          sub="Strategy documents you've submitted. Each upload becomes a new version. Latest = source of truth."
-          action={<Button variant="accent" icon={<Upload size={15}/>} onClick={() => setModal(true)}>Upload strategy</Button>}
+          sub={
+            lastUpdated
+              ? `Each upload becomes a new version · auto-refreshes · last ${lastUpdated.toLocaleTimeString()}`
+              : "Strategy documents you've submitted. Each upload becomes a new version. Latest = source of truth."
+          }
+          action={
+            <div className="flex items-center gap-3">
+              <button onClick={refresh} className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1">
+                <RefreshCw size={12}/> Refresh
+              </button>
+              <Button variant="accent" icon={<Upload size={15}/>} onClick={() => setModal(true)}>Upload strategy</Button>
+            </div>
+          }
         >
           Strategy library
         </SectionTitle>

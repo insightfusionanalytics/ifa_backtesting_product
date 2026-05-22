@@ -21,6 +21,7 @@ router = APIRouter()
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 SCHEMA_PATH = REPO_ROOT / "schemas" / "backtest.schema.json"
+EXAMPLE_PATH = REPO_ROOT / "schemas" / "backtest.example.json"
 
 
 def _load_schema() -> dict:
@@ -29,9 +30,21 @@ def _load_schema() -> dict:
     return json.loads(SCHEMA_PATH.read_text())
 
 
+@router.get("/backtests/example-template")
+def backtest_example_template(
+    _admin=Depends(require_role("main_admin", "sub_admin")),
+):
+    """Returns the canonical v1.0 example backtest JSON as a starting template
+    admins can copy and adapt for their own backtest results."""
+    if not EXAMPLE_PATH.exists():
+        raise HTTPException(status_code=500, detail="Example template not found on server")
+    return json.loads(EXAMPLE_PATH.read_text())
+
+
 class UploadResultIn(BaseModel):
     client_id: str
     result: dict  # full v1.0 JSON
+    strategy_id: str | None = None  # optional FK to strategy_documents.id
 
 
 class UploadResultOut(BaseModel):
@@ -39,6 +52,7 @@ class UploadResultOut(BaseModel):
     code: str
     name: str
     storage_key: str
+    strategy_version_id: str | None = None
 
 
 @router.post("/backtests/upload-result", response_model=UploadResultOut, status_code=201)
@@ -84,6 +98,27 @@ def upload_backtest_result(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
+    # 2b. Resolve optional strategy_id — must belong to this client (cross-tenant guard)
+    from app.db.models import StrategyDocument
+
+    strategy_version_id = None
+    if payload.strategy_id:
+        try:
+            sid = uuid.UUID(payload.strategy_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="strategy_id is not a valid UUID")
+        sdoc = (
+            db.query(StrategyDocument)
+            .filter(StrategyDocument.id == sid, StrategyDocument.client_id == client.id)
+            .first()
+        )
+        if not sdoc:
+            raise HTTPException(
+                status_code=404,
+                detail="Strategy not found, or it does not belong to the target client",
+            )
+        strategy_version_id = sdoc.id
+
     # 3. Stamp client into payload, serialise, upload to bucket
     payload.result["client"] = {"client_id": str(client.id), "client_name": client.name}
     raw = json.dumps(payload.result, ensure_ascii=False).encode("utf-8")
@@ -97,6 +132,7 @@ def upload_backtest_result(
     backtest = Backtest(
         id=bt_id,
         client_id=client.id,
+        strategy_version_id=strategy_version_id,
         name=payload.result["strategy"]["name"],
         code=payload.result["backtest_id"],
         status="completed",
@@ -137,4 +173,5 @@ def upload_backtest_result(
         code=backtest.code,
         name=backtest.name,
         storage_key=storage_key,
+        strategy_version_id=str(strategy_version_id) if strategy_version_id else None,
     )

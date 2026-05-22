@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { Send } from "lucide-react";
+import { useCallback, useState } from "react";
+import { RefreshCw, Send } from "lucide-react";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui";
 import { fetchRequests, submitRequest, type ClientRequest, type RequestType } from "../../lib/api";
+import { usePolling } from "../../lib/usePolling";
 
 const TABS: { id: RequestType; label: string }[] = [
   { id: "new_strategy", label: "New Strategy" },
@@ -12,10 +13,9 @@ const TABS: { id: RequestType; label: string }[] = [
 
 export default function RequestsPage() {
   const [tab, setTab] = useState<RequestType>("change");
-  const [history, setHistory] = useState<ClientRequest[]>([]);
-
-  const refresh = () => fetchRequests().then(setHistory).catch(() => setHistory([]));
-  useEffect(() => { refresh(); }, []);
+  const fetcher = useCallback(() => fetchRequests(), []);
+  const { data, refresh, lastUpdated } = usePolling<ClientRequest[]>(fetcher, 15_000);
+  const history = data ?? [];
 
   return (
     <div className="space-y-6">
@@ -53,7 +53,20 @@ export default function RequestsPage() {
       </Card>
 
       <Card>
-        <SectionTitle sub="Most recent first">Request history</SectionTitle>
+        <SectionTitle
+          sub={
+            lastUpdated
+              ? `Most recent first · auto-refreshes · last ${lastUpdated.toLocaleTimeString()}`
+              : "Most recent first"
+          }
+          action={
+            <button onClick={refresh} className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1">
+              <RefreshCw size={12}/> Refresh
+            </button>
+          }
+        >
+          Request history
+        </SectionTitle>
         <ul className="divide-y divide-ink-100 dark:divide-ink-800">
           {history.map((r) => (
             <li key={r.id} className="py-3 flex items-start gap-4">

@@ -542,8 +542,9 @@ def reset_db_state() -> None:
         print(f"  reset: cleared {n1} T&C, {n2} requests, {n3} test backtests")
 
 
-def login_as(driver, email: str, password: str) -> bool:
-    driver.get(f"{FRONTEND}/login")
+def login_as(driver, email: str, password: str, *, as_admin: bool = False) -> bool:
+    login_path = "/admin/login" if as_admin else "/login"
+    driver.get(f"{FRONTEND}{login_path}")
     try:
         wait_for(driver, "input[type='email']")
         driver.find_element(By.CSS_SELECTOR, "input[type='email']").clear()
@@ -551,18 +552,21 @@ def login_as(driver, email: str, password: str) -> bool:
         driver.find_element(By.CSS_SELECTOR, "input[type='email']").send_keys(email)
         driver.find_element(By.CSS_SELECTOR, "input[type='password']").send_keys(password)
         driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-        WebDriverWait(driver, 10).until(lambda d: "/login" not in d.current_url)
+        # Wait until URL leaves the login page entirely (no /login or /admin/login)
+        WebDriverWait(driver, 10).until(
+            lambda d: not (d.current_url.endswith("/login") or d.current_url.endswith("/admin/login"))
+        )
         return True
     except Exception:
         return False
 
 
 def test_admin_login(driver, run: TestRun) -> None:
-    print("\n— Admin login routes to /admin —")
+    print("\n— Admin login at /admin/login routes to /admin —")
     try:
-        ok = login_as(driver, ADMIN_EMAIL, ADMIN_PASSWORD)
-        run.record("admin login succeeds", ok)
-        run.record("admin redirected to /admin", "/admin" in driver.current_url, driver.current_url)
+        ok = login_as(driver, ADMIN_EMAIL, ADMIN_PASSWORD, as_admin=True)
+        run.record("admin login at /admin/login succeeds", ok)
+        run.record("admin redirected to /admin", "/admin" in driver.current_url and "/login" not in driver.current_url, driver.current_url)
     except Exception as e:
         take_screenshot(driver, "admin_login_fail")
         run.record("admin login", False, str(e)[:120])
@@ -656,6 +660,15 @@ def test_admin_backtest_upload(driver, run: TestRun) -> None:
             take_screenshot(driver, "admin_upload_fail")
             return
 
+        # Pick a client (default is "" now — no auto-select). Wait for clients fetch.
+        from selenium.webdriver.support.ui import Select
+        WebDriverWait(driver, 10).until(
+            lambda d: len(d.find_element(By.TAG_NAME, "select").find_elements(By.TAG_NAME, "option")) >= 2
+        )
+        client_select = driver.find_element(By.TAG_NAME, "select")
+        Select(client_select).select_by_index(1)  # first real client
+        time.sleep(0.5)
+
         textarea = driver.find_element(By.TAG_NAME, "textarea")
 
         # ── TEST 1: bad JSON (missing required fields) → expect violations ──
@@ -671,6 +684,14 @@ def test_admin_backtest_upload(driver, run: TestRun) -> None:
         # Reload the page so stale "Validation failed" card doesn't poison the wait check
         driver.get(f"{FRONTEND}/admin/backtests/upload")
         wait_for_page_ready(driver, "upload backtest result")
+
+        # Re-pick the client after reload
+        WebDriverWait(driver, 10).until(
+            lambda d: len(d.find_element(By.TAG_NAME, "select").find_elements(By.TAG_NAME, "option")) >= 2
+        )
+        client_select = driver.find_element(By.TAG_NAME, "select")
+        Select(client_select).select_by_index(1)
+        time.sleep(0.5)
 
         example = json.loads(BACKTEST_EXAMPLE.read_text())
         ts = int(time.time())

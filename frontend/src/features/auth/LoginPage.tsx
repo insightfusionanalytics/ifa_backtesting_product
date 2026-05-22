@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../lib/firebase";
@@ -21,10 +21,16 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       const me = await fetchMe();
-      setMe(me);
+      // Role-gate: client portal only accepts clients
       const isAdmin = me.role === "main_admin" || me.role === "sub_admin";
-      if (isAdmin) navigate("/admin");
-      else if (me.needs_tnc_acceptance) navigate("/terms");
+      if (isAdmin) {
+        await signOut(auth);
+        setMe(null);
+        setError("This is the client portal. Admins, please sign in at /admin/login.");
+        return;
+      }
+      setMe(me);
+      if (me.needs_tnc_acceptance) navigate("/terms");
       else navigate("/");
     } catch (err: unknown) {
       setError(friendlyAuthError(err));
@@ -61,6 +67,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full h-10 px-3 text-sm rounded-lg border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
               placeholder="you@company.com"
+              autoComplete="email"
             />
           </div>
           <div>
@@ -71,6 +78,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full h-10 px-3 text-sm rounded-lg border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+              autoComplete="current-password"
             />
           </div>
           {error && (
@@ -89,6 +97,9 @@ export default function LoginPage() {
 
         <p className="mt-6 text-[11px] text-ink-400 text-center">
           No account? Contact your IFA account manager.
+        </p>
+        <p className="mt-3 text-[11px] text-ink-400 text-center">
+          IFA team member? <a href="/admin/login" className="text-accent-700 dark:text-accent-300 hover:underline">Sign in to admin console →</a>
         </p>
       </div>
     </div>

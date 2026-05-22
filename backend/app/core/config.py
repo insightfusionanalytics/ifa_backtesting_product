@@ -34,8 +34,17 @@ class Settings(BaseSettings):
     MAIN_ADMIN_EMAIL: str
     MAIN_ADMIN_INITIAL_PASSWORD: str
 
+    # CORS — comma-separated origins. Includes localhost fallback for dev.
+    # In prod set this to your Vercel domain(s), e.g.
+    #   ALLOWED_ORIGINS=https://app.example.com,https://app-staging.example.com
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+
     # Observability
     SENTRY_DSN_BACKEND: str = ""
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
 
 
 @lru_cache

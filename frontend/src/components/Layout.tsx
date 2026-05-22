@@ -2,7 +2,6 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import {
-  Activity,
   BarChart3,
   Bell,
   ChevronDown,
@@ -11,10 +10,7 @@ import {
   LogOut,
   MessageSquare,
   Moon,
-  Settings,
-  Shield,
   Sun,
-  User,
 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { useAuth } from "../store/auth";

@@ -234,10 +234,53 @@ export async function deleteAdminClient(id: string) {
   await api.delete(`/admin/clients/${id}`);
 }
 
-export async function uploadBacktestResult(client_id: string, result: object) {
+export async function uploadBacktestResult(
+  client_id: string,
+  result: object,
+  strategy_id?: string | null,
+) {
   return (
-    await api.post("/admin/backtests/upload-result", { client_id, result })
+    await api.post("/admin/backtests/upload-result", {
+      client_id,
+      result,
+      ...(strategy_id ? { strategy_id } : {}),
+    })
   ).data;
+}
+
+export async function fetchBacktestExampleTemplate(): Promise<object> {
+  return (await api.get<object>("/admin/backtests/example-template")).data;
+}
+
+// ── Admin inbox: "what needs my attention right now" ───────────
+export type AdminInboxItem = {
+  type: "strategy_uploaded" | "request_open";
+  id: string;
+  client_id: string;
+  client_name: string;
+  title: string;
+  subtitle: string;
+  occurred_at: string;
+  href: string;
+};
+
+export type AdminInbox = {
+  items: AdminInboxItem[];
+  total: number;
+  unread_strategies: number;
+  unread_requests: number;
+};
+
+export async function fetchAdminInbox(): Promise<AdminInbox> {
+  return (await api.get<AdminInbox>("/admin/inbox")).data;
+}
+
+// Admin: list a specific client's requests (uses the same /admin/inbox under the hood
+// would be nice but inbox only shows OPEN. We need full list per client.)
+// We'll route via a new admin endpoint added below.
+export async function fetchClientRequests(clientId: string): Promise<ClientRequest[]> {
+  const r = await api.get<ClientRequest[]>(`/admin/clients/${clientId}/requests`);
+  return r.data;
 }
 
 export async function publishTerms(args: {
@@ -280,4 +323,32 @@ export async function fetchAuditLog(action_prefix?: string): Promise<AuditEntry[
   return (await api.get<AuditEntry[]>("/admin/audit", {
     params: action_prefix ? { action_prefix } : {},
   })).data;
+}
+
+// ── Admin: client-strategies (read uploads to know what the client wants tested) ──
+export type AdminStrategy = {
+  id: string;
+  client_id: string;
+  name: string;
+  version: number;
+  storage_key: string;
+  size_bytes: number | null;
+  mime_type: string | null;
+  checksum: string | null;
+  is_source_of_truth: boolean;
+  status: string;
+  uploaded_by: string | null;
+  uploaded_at: string;
+};
+
+export async function fetchClientStrategies(clientId: string): Promise<AdminStrategy[]> {
+  const r = await api.get<AdminStrategy[]>(`/admin/clients/${clientId}/strategies`);
+  return r.data;
+}
+
+export async function getStrategyDownloadUrl(strategyId: string): Promise<string> {
+  const r = await api.get<{ signed_url: string; expires_in: number }>(
+    `/admin/strategies/${strategyId}/download-url`
+  );
+  return r.data.signed_url;
 }

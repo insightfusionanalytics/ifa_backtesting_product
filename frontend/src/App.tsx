@@ -3,6 +3,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import LoginPage from "./features/auth/LoginPage";
+import AdminLoginPage from "./features/auth/AdminLoginPage";
 import OverviewPage from "./features/overview/OverviewPage";
 import StrategiesPage from "./features/strategies/StrategiesPage";
 import RequestsPage from "./features/requests/RequestsPage";
@@ -34,7 +35,12 @@ function Protected({
   const me = useAuth((s) => s.me);
   const loading = useAuth((s) => s.loading);
   if (loading) return <div className="p-6 text-sm text-ink-500">Loading…</div>;
-  if (!me) return <Navigate to="/login" replace />;
+  // Send unauthenticated users to the appropriate login page based on which area
+  // they tried to enter. /admin/* → /admin/login. Everything else → /login.
+  if (!me) {
+    const loginTarget = requireAdmin ? "/admin/login" : "/login";
+    return <Navigate to={loginTarget} replace />;
+  }
 
   const isAdmin = me.role === "main_admin" || me.role === "sub_admin";
   if (requireAdmin && !isAdmin) return <Navigate to="/" replace />;
@@ -86,7 +92,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public login pages — role-gated so a client can't sneak in via /admin/login */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+
         <Route path="/terms" element={<Protected><TermsAcceptPage /></Protected>} />
 
         {/* Client portal */}

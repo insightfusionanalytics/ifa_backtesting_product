@@ -1,18 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Activity, ArrowRight, BarChart3, CheckCircle2, FileText, Inbox, LineChart } from "lucide-react";
+import { Activity, ArrowRight, BarChart3, CheckCircle2, FileText, Inbox, LineChart, RefreshCw } from "lucide-react";
 import { Badge, Button, Card, SectionTitle, StatTile } from "../../components/ui";
 import { fetchBacktests, fetchRequests, type BacktestListItem } from "../../lib/api";
 import { useAuth } from "../../store/auth";
+
+const POLL_INTERVAL_MS = 20_000;
 
 export default function OverviewPage() {
   const me = useAuth((s) => s.me);
   const [backtests, setBacktests] = useState<BacktestListItem[]>([]);
   const [requestCount, setRequestCount] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const pollRef = useRef<number | null>(null);
+
+  const refresh = async () => {
+    try {
+      const [bts, reqs] = await Promise.all([fetchBacktests(), fetchRequests()]);
+      setBacktests(bts);
+      setRequestCount(reqs.length);
+      setLastUpdated(new Date());
+    } catch {
+      /* leave previous data */
+    }
+  };
 
   useEffect(() => {
-    fetchBacktests().then(setBacktests).catch(() => setBacktests([]));
-    fetchRequests().then((r) => setRequestCount(r.length)).catch(() => setRequestCount(0));
+    refresh();
+    pollRef.current = window.setInterval(refresh, POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+    };
   }, []);
 
   const active = backtests.filter((b) => ["in_progress", "approved"].includes(b.status)).length;
@@ -73,7 +91,16 @@ export default function OverviewPage() {
       </div>
 
       <Card>
-        <SectionTitle sub="Most recent first">Latest backtests</SectionTitle>
+        <SectionTitle
+          sub={lastUpdated ? `Most recent first · auto-refreshes every ${POLL_INTERVAL_MS / 1000}s · last updated ${lastUpdated.toLocaleTimeString()}` : "Most recent first"}
+          action={
+            <button onClick={refresh} className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1">
+              <RefreshCw size={12}/> Refresh
+            </button>
+          }
+        >
+          Latest backtests
+        </SectionTitle>
         <ul className="divide-y divide-ink-100 dark:divide-ink-800">
           {backtests.slice(0, 5).map((b) => (
             <li key={b.id} className="py-3 flex items-center justify-between">

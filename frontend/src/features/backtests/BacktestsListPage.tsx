@@ -1,24 +1,37 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { Eye } from "lucide-react";
+import { Eye, RefreshCw } from "lucide-react";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui";
 import { fetchBacktests, type BacktestListItem } from "../../lib/api";
+import { usePolling } from "../../lib/usePolling";
 
 const FILTERS = ["all", "draft", "in_progress", "completed", "approved", "cancelled"] as const;
 type Filter = (typeof FILTERS)[number];
 
 export default function BacktestsListPage() {
-  const [rows, setRows] = useState<BacktestListItem[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
-
-  useEffect(() => {
-    fetchBacktests(filter === "all" ? undefined : filter).then(setRows).catch(() => setRows([]));
-  }, [filter]);
+  const fetcher = useCallback(
+    () => fetchBacktests(filter === "all" ? undefined : filter),
+    [filter],
+  );
+  const { data, refresh, lastUpdated } = usePolling<BacktestListItem[]>(fetcher, 15_000);
+  const rows = data ?? [];
 
   return (
     <div className="space-y-6">
       <Card>
-        <SectionTitle sub="All runs submitted on behalf of your organisation.">
+        <SectionTitle
+          sub={
+            lastUpdated
+              ? `All runs submitted on behalf of your organisation · auto-refreshes · last ${lastUpdated.toLocaleTimeString()}`
+              : "All runs submitted on behalf of your organisation."
+          }
+          action={
+            <button onClick={refresh} className="text-xs text-ink-500 hover:text-ink-900 dark:hover:text-ink-100 inline-flex items-center gap-1">
+              <RefreshCw size={12}/> Refresh
+            </button>
+          }
+        >
           Backtests
         </SectionTitle>
 
