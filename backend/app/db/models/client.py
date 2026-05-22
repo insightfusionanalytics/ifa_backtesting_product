@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,6 +15,11 @@ class Client(UUIDPKMixin, TimestampMixin, Base):
     primary_contact: Mapped[str | None] = mapped_column(String(200))
     tier: Mapped[str] = mapped_column(String(20), nullable=False, default="tier1")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+
+    # Per-client feature gate for the VAM (Ravi's) backtesting engine. False by default
+    # so only explicitly-enabled clients see the "+ New backtest" CTA + /backtests/new
+    # route. If we add more feature gates later, consider folding into a JSONB column.
+    vam_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     current_tnc_version_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("terms_versions.id", ondelete="SET NULL")

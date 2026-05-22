@@ -8,12 +8,15 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Menu,
   MessageSquare,
   Moon,
   Sun,
+  X,
 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { useAuth } from "../store/auth";
+import { useSidebarOverride } from "../store/sidebarOverride";
 
 const NAV_CLIENT = [
   { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
@@ -28,6 +31,15 @@ export default function Layout() {
   const navigate = useNavigate();
   const [dark, setDark] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+
+  // Sidebar override is set by pages that want to commandeer the left rail
+  // (e.g. a backtest result page swaps the nav for a param-tweak panel).
+  const sidebarOverride = useSidebarOverride((s) => s.override);
+  const showOverride = useSidebarOverride((s) => s.showOverride);
+  const toggleShowOverride = useSidebarOverride((s) => s.toggleShowOverride);
+  // Show override iff the page registered one AND the user hasn't toggled
+  // back to the workspace nav.
+  const inOverrideMode = sidebarOverride !== null && showOverride;
 
   const toggleDark = () => {
     setDark(!dark);
@@ -65,28 +77,67 @@ export default function Layout() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <div className="px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-ink-400 dark:text-ink-500">
-            Workspace
-          </div>
-          {NAV_CLIENT.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.end}
-              className={({ isActive }) =>
-                `w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-ink-900 text-white dark:bg-ink-50 dark:text-ink-900"
-                    : "text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
-                }`
-              }
+        {/*
+          The flex-1 div below holds EITHER the standard workspace nav OR a
+          page-supplied override (e.g. the param-tweak panel on a backtest
+          result page). When an override is registered, a small toggle button
+          appears in the section header so the user can flip between the two.
+          The opacity transition gives a soft crossfade rather than a hard cut.
+        */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Section header — labels "Workspace" or "Parameters" depending on mode */}
+          <div className="px-3 pt-4 pb-1 flex items-center justify-between">
+            <div
+              key={inOverrideMode ? "params-label" : "workspace-label"}
+              className="px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-ink-400 dark:text-ink-500 transition-opacity duration-200"
             >
-              <n.icon size={15} />
-              <span className="flex-1 text-left truncate">{n.label}</span>
-            </NavLink>
-          ))}
-        </nav>
+              {inOverrideMode ? "Parameters" : "Workspace"}
+            </div>
+            {sidebarOverride !== null && (
+              <button
+                type="button"
+                onClick={toggleShowOverride}
+                className="mr-2 size-7 rounded-md text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800 inline-flex items-center justify-center"
+                aria-label={inOverrideMode ? "Show workspace nav" : "Show parameters panel"}
+                title={inOverrideMode ? "Show workspace nav" : "Show parameters panel"}
+              >
+                {inOverrideMode ? <Menu size={14} /> : <X size={14} />}
+              </button>
+            )}
+          </div>
+
+          {/* Body — single scroll region; content swaps with opacity fade */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-4">
+            <div
+              key={inOverrideMode ? "override" : "nav"}
+              className="animate-fadeIn"
+            >
+              {inOverrideMode ? (
+                sidebarOverride
+              ) : (
+                <nav className="space-y-0.5">
+                  {NAV_CLIENT.map((n) => (
+                    <NavLink
+                      key={n.to}
+                      to={n.to}
+                      end={n.end}
+                      className={({ isActive }) =>
+                        `w-full flex items-center gap-2.5 px-3 h-9 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? "bg-ink-900 text-white dark:bg-ink-50 dark:text-ink-900"
+                            : "text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
+                        }`
+                      }
+                    >
+                      <n.icon size={15} />
+                      <span className="flex-1 text-left truncate">{n.label}</span>
+                    </NavLink>
+                  ))}
+                </nav>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="p-3 border-t border-ink-200 dark:border-ink-800">
           <div className="px-3 py-2.5 rounded-lg bg-ink-50 dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800">

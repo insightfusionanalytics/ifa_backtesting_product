@@ -39,6 +39,17 @@ export default {
         'card': '0 1px 2px 0 rgb(17 17 21 / 0.04), 0 1px 1px 0 rgb(17 17 21 / 0.02)',
         'pop':  '0 8px 28px -8px rgb(17 17 21 / 0.18), 0 2px 6px -2px rgb(17 17 21 / 0.06)',
       },
+      // Used by the sidebar morph in Layout.tsx — when the override panel
+      // swaps in (or out) we crossfade rather than hard-cutting.
+      keyframes: {
+        fadeIn: {
+          '0%':   { opacity: '0', transform: 'translateY(-2px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        fadeIn: 'fadeIn 200ms ease-out',
+      },
     },
   },
   plugins: [],

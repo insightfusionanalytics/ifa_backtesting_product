@@ -16,7 +16,7 @@
  *   - 502 (engine error)          → "Engine error — please retry"
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowLeft, FileText, Play } from "lucide-react";
 import { Button, Card, SectionTitle } from "../../components/ui";
 import {
@@ -30,6 +30,7 @@ import {
   type VamStrategy,
   type VamSymbol,
 } from "../../lib/api";
+import { useAuth } from "../../store/auth";
 import { VAM_STEP_OPTIONS, VamParamForm, defaultsFromSchema } from "./VamParamForm";
 
 type RunErr = {
@@ -41,6 +42,14 @@ type RunErr = {
 
 export default function ClientRunBacktestPage() {
   const nav = useNavigate();
+  const vamEnabled = useAuth((s) => s.me?.vam_enabled ?? false);
+
+  // Hard route guard: even if a non-VAM client lands here via URL, bounce them
+  // back. The backend would also 403 every call below, but this gives an
+  // instant redirect instead of a series of error banners.
+  if (!vamEnabled) {
+    return <Navigate to="/backtests" replace />;
+  }
 
   const [vamStrategies, setVamStrategies] = useState<VamStrategy[] | null>(null);
   const [vamSymbols, setVamSymbols] = useState<VamSymbol[]>([]);

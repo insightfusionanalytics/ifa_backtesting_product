@@ -28,11 +28,38 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.admin.vam import VamRunOut, _translate_vam_error
 from app.core.config import get_settings
-from app.core.deps import client_scope, current_user
+from app.core.deps import current_user
 from app.db.models import Client, User
 from app.db.session import get_db
 from app.services.vam import get_vam_client
 from app.services.vam_run import persist_vam_run
+
+
+# ── Feature-gate dependency ────────────────────────────────────────────────
+#
+# Only clients whose Client row has vam_enabled=True can hit any /vam/* route.
+# Admins are NOT subject to this — the admin variants live under /admin/vam/.
+# Returns the client_id (UUID) for downstream handlers that need it.
+
+def vam_client_scope(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> uuid.UUID:
+    if user.role != "client" or user.client_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client-only endpoint")
+    client = (
+        db.query(Client).filter(Client.id == user.client_id, Client.deleted_at.is_(None)).first()
+    )
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    if not client.vam_enabled:
+        # 403 with a clear reason so the frontend can show a friendly "not enabled" state
+        # rather than a generic forbidden screen.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="vam_not_enabled_for_client",
+        )
+    return client.id
 
 router = APIRouter(prefix="/vam", tags=["vam"])
 
@@ -88,7 +115,7 @@ class ClientVamRunIn(BaseModel):
 
 
 @router.get("/strategies")
-async def list_strategies(_user: User = Depends(current_user)):
+async def list_strategies(_client_id: uuid.UUID = Depends(vam_client_scope)):
     try:
         return await get_vam_client().list_strategies()
     except Exception as e:
@@ -96,7 +123,7 @@ async def list_strategies(_user: User = Depends(current_user)):
 
 
 @router.get("/strategies/{step_id}/schema")
-async def get_step_schema(step_id: str, _user: User = Depends(current_user)):
+async def get_step_schema(step_id: str, _client_id: uuid.UUID = Depends(vam_client_scope)):
     try:
         return await get_vam_client().get_step_schema(step_id)
     except Exception as e:
@@ -104,7 +131,7 @@ async def get_step_schema(step_id: str, _user: User = Depends(current_user)):
 
 
 @router.get("/symbols")
-async def list_symbols(_user: User = Depends(current_user)):
+async def list_symbols(_client_id: uuid.UUID = Depends(vam_client_scope)):
     try:
         return await get_vam_client().list_symbols()
     except Exception as e:
@@ -118,16 +145,17 @@ async def list_symbols(_user: User = Depends(current_user)):
 async def client_run_via_vam(
     payload: ClientVamRunIn,
     request: Request,
-    client_id: uuid.UUID = Depends(client_scope),
+    client_id: uuid.UUID = Depends(vam_client_scope),
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
-    """Authenticated client triggers a VAM backtest run for themselves.
+    """Authenticated VAM-enabled client triggers a backtest run for themselves.
 
     Differences vs the admin endpoint:
       * client_id is pinned from the session — the body can't target another client
       * actor_type = "client" in the audit log + envelope
       * subject to the per-client sliding-window rate limit
+      * requires Client.vam_enabled = True (enforced by vam_client_scope)
     """
     _check_rate_limit(client_id)
 

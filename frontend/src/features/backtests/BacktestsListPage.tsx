@@ -4,6 +4,7 @@ import { Eye, Play, RefreshCw } from "lucide-react";
 import { Badge, Button, Card, SectionTitle } from "../../components/ui";
 import { fetchBacktests, type BacktestListItem } from "../../lib/api";
 import { usePolling } from "../../lib/usePolling";
+import { useAuth } from "../../store/auth";
 
 const FILTERS = ["all", "draft", "in_progress", "completed", "approved", "cancelled"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -16,6 +17,11 @@ export default function BacktestsListPage() {
   );
   const { data, refresh, lastUpdated } = usePolling<BacktestListItem[]>(fetcher, 15_000);
   const rows = data ?? [];
+
+  // "New backtest" is gated to clients whose IFA account has been granted access
+  // to Ravi's engine (Client.vam_enabled on the backend). Other clients keep
+  // seeing the list but not the CTA.
+  const vamEnabled = useAuth((s) => s.me?.vam_enabled ?? false);
 
   return (
     <div className="space-y-6">
@@ -34,9 +40,11 @@ export default function BacktestsListPage() {
               >
                 <RefreshCw size={12}/> Refresh
               </button>
-              <Link to="/backtests/new">
-                <Button variant="accent" icon={<Play size={14}/>}>New backtest</Button>
-              </Link>
+              {vamEnabled && (
+                <Link to="/backtests/new">
+                  <Button variant="accent" icon={<Play size={14}/>}>New backtest</Button>
+                </Link>
+              )}
             </div>
           }
         >

@@ -14,12 +14,19 @@ import {
   YAxis,
 } from "recharts";
 import { Badge, Button, Card, KV, SectionTitle } from "../../components/ui";
-import { fetchBacktest, type BacktestDetail } from "../../lib/api";
+import { fetchBacktest, type BacktestDetail, type VamPersistedBacktest } from "../../lib/api";
+import { useAuth } from "../../store/auth";
+import { useSidebarOverride } from "../../store/sidebarOverride";
+import VamBacktestDetail from "../vam/VamBacktestDetail";
+import VamResultSidebar from "../vam/VamResultSidebar";
 
 export default function BacktestDetailPage() {
   const { id = "" } = useParams();
   const [bt, setBt] = useState<BacktestDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  const vamEnabled = useAuth((s) => s.me?.vam_enabled ?? false);
+  const setSidebarOverride = useSidebarOverride((s) => s.setOverride);
 
   useEffect(() => {
     fetchBacktest(id)
@@ -27,10 +34,59 @@ export default function BacktestDetailPage() {
       .catch((e) => setErr(e?.response?.data?.detail ?? "Failed to load"));
   }, [id]);
 
+  // For a VAM-engine result viewed by a VAM-enabled client, swap the layout
+  // sidebar for the tweak-and-rerun panel. The Layout already provides a
+  // toggle button in its sidebar header so the user can flip back to the
+  // workspace nav without leaving this page. On unmount (or when the
+  // backtest changes), the cleanup function clears the override.
+  useEffect(() => {
+    if (bt && bt.engine === "vam" && vamEnabled) {
+      const envelope = bt.result as VamPersistedBacktest;
+      setSidebarOverride(
+        <VamResultSidebar
+          step={envelope.step}
+          initialParams={(envelope.params ?? {}) as Record<string, unknown>}
+        />,
+      );
+    } else {
+      setSidebarOverride(null);
+    }
+    return () => setSidebarOverride(null);
+  }, [bt, vamEnabled, setSidebarOverride]);
+
   if (err) return <div className="text-sm text-red-600">{err}</div>;
   if (!bt) return <div className="text-sm text-ink-500">Loading…</div>;
 
-  const result = bt.result;
+  // VAM-engine results have a completely different shape. Render the VAM-native
+  // view inside the same page header so the user still sees the back-link + name.
+  if (bt.engine === "vam" && bt.result) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+          <div className="min-w-0">
+            <Link to="/backtests" className="text-xs text-ink-500 hover:text-ink-900 inline-flex items-center gap-1.5 mb-2">
+              <ArrowLeft size={13}/> Back to backtests
+            </Link>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-semibold tracking-tight text-ink-900 dark:text-ink-50">{bt.name}</h1>
+              <Badge status={bt.status} dot>{bt.status.replace("_", " ")}</Badge>
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-xs text-ink-500 dark:text-ink-400">
+              <span className="font-mono tabular">{bt.code}</span>
+              {bt.completed_at && (
+                <><span>·</span><span>Delivered {new Date(bt.completed_at).toLocaleDateString()}</span></>
+              )}
+            </div>
+          </div>
+        </div>
+        <VamBacktestDetail envelope={bt.result as VamPersistedBacktest} />
+      </div>
+    );
+  }
+
+  // Manual-upload (v1.0 schema) — original renderer below.
+  // We narrow the union for the rest of this function: result is a v1.0 BacktestResult.
+  const result = bt.result as Exclude<BacktestDetail["result"], VamPersistedBacktest | null> | null;
   const summary = (bt.metrics?.summary ?? result?.metrics?.summary) as Record<string, number> | undefined;
 
   return (

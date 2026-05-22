@@ -14,6 +14,7 @@ class ClientOut(BaseModel):
     name: str
     tier: str
     status: str
+    vam_enabled: bool = False  # drives client-side gating of the engine UI
 
 
 class MeOut(BaseModel):
@@ -24,19 +25,25 @@ class MeOut(BaseModel):
     client: ClientOut | None
     needs_tnc_acceptance: bool
     latest_tnc_version_id: str | None
+    # Convenience copy at the top level so the frontend can `if (me.vam_enabled)` without
+    # null-checking through me.client. Mirrors me.client.vam_enabled when client is set.
+    vam_enabled: bool = False
 
 
 @router.get("/me", response_model=MeOut)
 def get_me(user: User = Depends(current_user), db: Session = Depends(get_db)):
     client_out: ClientOut | None = None
+    vam_enabled = False
     if user.client_id:
         client = db.query(Client).filter(Client.id == user.client_id).first()
         if client:
+            vam_enabled = bool(client.vam_enabled)
             client_out = ClientOut(
                 id=str(client.id),
                 name=client.name,
                 tier=client.tier,
                 status=client.status,
+                vam_enabled=vam_enabled,
             )
 
     latest = (
@@ -64,4 +71,5 @@ def get_me(user: User = Depends(current_user), db: Session = Depends(get_db)):
         client=client_out,
         needs_tnc_acceptance=needs_tnc,
         latest_tnc_version_id=latest_id,
+        vam_enabled=vam_enabled,
     )

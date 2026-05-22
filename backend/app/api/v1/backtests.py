@@ -22,6 +22,7 @@ class BacktestListItem(BaseModel):
     code: str
     name: str
     status: str
+    engine: str  # 'manual' (v1.0 schema) or 'vam' (VAM-native) — drives renderer choice
     completed_at: datetime | None
     created_at: datetime
 
@@ -31,9 +32,10 @@ class BacktestDetail(BaseModel):
     code: str
     name: str
     status: str
+    engine: str  # see BacktestListItem.engine
     assumptions: dict | None
     metrics: dict | None
-    result: dict | None  # Full JSON from storage (the locked schema)
+    result: dict | None  # Full envelope from storage — v1.0 or vam-1.0 shape per `engine`
     completed_at: datetime | None
     created_at: datetime
 
@@ -54,6 +56,7 @@ def list_backtests(
             code=r.code,
             name=r.name,
             status=r.status,
+            engine=r.engine,
             completed_at=r.completed_at,
             created_at=r.created_at,
         )
@@ -93,6 +96,7 @@ def get_backtest(
         code=row.code,
         name=row.name,
         status=row.status,
+        engine=row.engine,
         assumptions=row.assumptions,
         metrics=row.metrics,
         result=result_payload,

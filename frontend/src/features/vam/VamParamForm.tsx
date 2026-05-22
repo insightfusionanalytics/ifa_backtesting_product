@@ -123,6 +123,12 @@ export interface VamParamFormProps {
   resettable?: boolean;
   /** Disable all inputs (e.g. while a backtest is running). */
   disabled?: boolean;
+  /**
+   * Compact mode: forces single-column layout + smaller spacing, suited to
+   * narrow containers like the morph-sidebar (~240px wide). Default false
+   * (uses the 2-column grid that fits the dedicated configurator page).
+   */
+  compact?: boolean;
 }
 
 export function VamParamForm({
@@ -132,6 +138,7 @@ export function VamParamForm({
   dataRange = null,
   resettable = true,
   disabled = false,
+  compact = false,
 }: VamParamFormProps) {
   // On schema change, fill in any defaults the parent didn't provide.
   // (We don't overwrite values the parent already set — that would clobber
@@ -158,17 +165,23 @@ export function VamParamForm({
   const fieldCls =
     "w-full h-9 px-2.5 text-sm rounded-md border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 focus:outline-none focus:ring-2 focus:ring-accent-500/40 disabled:opacity-50";
 
+  // In compact mode (used in the morph-sidebar) collapse to single column +
+  // tighter row spacing so 35 params fit reasonably in a 240px-wide rail.
+  const gridCls = compact
+    ? "grid grid-cols-1 gap-y-2.5"
+    : "grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3";
+
   return (
-    <div className="space-y-4">
+    <div className={compact ? "space-y-3" : "space-y-4"}>
       {groups.map((g) => (
         <fieldset
           key={g.name}
-          className="border-t border-ink-100 dark:border-ink-800 pt-3 first:border-t-0 first:pt-0"
+          className={`${compact ? "pt-2.5" : "pt-3"} border-t border-ink-100 dark:border-ink-800 first:border-t-0 first:pt-0`}
         >
           <legend className="text-[10px] uppercase tracking-[0.12em] text-ink-500 dark:text-ink-400 mb-2 font-semibold">
             {g.name}
           </legend>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+          <div className={gridCls}>
             {g.fields.map((p) => {
               const id = `vam-param-${p.name}`;
               const current = value[p.name];

@@ -20,9 +20,17 @@ export type Me = {
   email: string;
   role: "client" | "sub_admin" | "main_admin";
   status: "active" | "suspended";
-  client: { id: string; name: string; tier: string; status: string } | null;
+  client: {
+    id: string;
+    name: string;
+    tier: string;
+    status: string;
+    vam_enabled?: boolean;
+  } | null;
   needs_tnc_acceptance: boolean;
   latest_tnc_version_id: string | null;
+  /** True when this user's client is allowed to run VAM-engine backtests. */
+  vam_enabled: boolean;
 };
 
 export async function fetchMe(): Promise<Me> {
@@ -122,11 +130,14 @@ export async function submitRequest(args: {
 }
 
 // ── Backtests ───────────────────────────────────────────────────
+export type BacktestEngine = "manual" | "vam";
+
 export type BacktestListItem = {
   id: string;
   code: string;
   name: string;
   status: string;
+  engine: BacktestEngine;
   completed_at: string | null;
   created_at: string;
 };
@@ -136,9 +147,13 @@ export type BacktestDetail = {
   code: string;
   name: string;
   status: string;
+  engine: BacktestEngine;
   assumptions: Record<string, unknown> | null;
   metrics: Record<string, unknown> | null;
-  result: BacktestResult | null;
+  // For engine === "manual": v1.0 BacktestResult shape.
+  // For engine === "vam":    VamPersistedBacktest envelope.
+  // Use the discriminator on `engine` (not on result internals) before casting.
+  result: BacktestResult | VamPersistedBacktest | null;
   completed_at: string | null;
   created_at: string;
 };
