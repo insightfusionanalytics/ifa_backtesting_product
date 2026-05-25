@@ -34,7 +34,11 @@ echo "═══ building images ═══"
 docker compose -f "$COMPOSE_FILE" build --pull
 
 echo "═══ running DB migrations ═══"
-docker compose -f "$COMPOSE_FILE" run --rm backend alembic upgrade head
+# alembic.ini lives at /app/backend/alembic.ini inside the container (the
+# Dockerfile preserves the dev layout). The container WORKDIR is /app, so
+# point alembic at the config explicitly or it errors with
+# "No 'script_location' key found in configuration".
+docker compose -f "$COMPOSE_FILE" run --rm --workdir /app/backend backend alembic upgrade head
 
 echo "═══ restarting services ═══"
 docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
