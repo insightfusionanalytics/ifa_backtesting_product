@@ -24,6 +24,13 @@ echo "═══ sanity-checking env ═══"
 test -f "$ENV_FILE"             || { echo "✗ Missing $ENV_FILE"; exit 1; }
 test -f "backend/secrets/firebase-admin.json" || { echo "✗ Missing backend/secrets/firebase-admin.json"; exit 1; }
 
+# The container runs as a non-root `app` user (UID 1000) for security; the
+# bind-mounted Firebase service-account JSON needs to be world-readable so
+# `app` can read it. The file is in /opt/ifa-backtest-product/backend/secrets/
+# which only root can list, so 644 is fine on this single-user box.
+chmod 644 backend/secrets/firebase-admin.json
+chmod 600 "$ENV_FILE"  # env file stays root-only
+
 # Load env so frontend build-args see VITE_* values
 set -a
 # shellcheck disable=SC1090
