@@ -4,7 +4,12 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY frontend/package*.json ./
-RUN npm ci
+# Using `npm install` rather than `npm ci` because the package-lock.json is
+# generated on macOS and omits Linux-specific platform binaries (e.g.
+# @emnapi/core) that `npm ci` strictly requires. `npm install` will pick them
+# up at build time. If we move the lock generation to a Linux container later
+# we can switch this back to `npm ci` for stricter reproducibility.
+RUN npm install --no-audit --no-fund
 
 # Build-time env: VITE_* are baked into the bundle.
 # Pass these via --build-arg in docker-compose for prod.
