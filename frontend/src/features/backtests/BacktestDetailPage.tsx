@@ -14,7 +14,12 @@ import {
   YAxis,
 } from "recharts";
 import { Badge, Button, Card, KV, SectionTitle } from "../../components/ui";
-import { fetchBacktest, type BacktestDetail, type VamPersistedBacktest } from "../../lib/api";
+import {
+  fetchBacktest,
+  type BacktestDetail,
+  type BacktestResult,
+  type VamPersistedBacktest,
+} from "../../lib/api";
 import { useAuth } from "../../store/auth";
 import { useSidebarOverride } from "../../store/sidebarOverride";
 import VamBacktestDetail from "../vam/VamBacktestDetail";
@@ -282,11 +287,16 @@ function KpiCard({ label, value, tone = "neutral" }: { label: string; value?: st
   );
 }
 
+// Operates only on the v1.0 (BacktestResult) shape — VAM-engine results have
+// their own renderer and never call this helper. We accept the union for the
+// call-site convenience but narrow + bail out if VAM accidentally lands here.
 function mergeBenchmark(result: BacktestDetail["result"]) {
   if (!result) return [];
-  const bench = result.time_series.benchmark_curves?.[0];
+  if ("engine_response" in result) return []; // VAM envelope — not applicable
+  const v1 = result as BacktestResult;
+  const bench = v1.time_series.benchmark_curves?.[0];
   const benchMap = new Map((bench?.series ?? []).map((p) => [p.date, p.value]));
-  return result.time_series.equity_curve.map((p) => ({
+  return v1.time_series.equity_curve.map((p) => ({
     date: p.date,
     nav: p.nav,
     benchmark: benchMap.get(p.date) ?? undefined,

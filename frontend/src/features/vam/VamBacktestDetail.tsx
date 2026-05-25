@@ -225,8 +225,6 @@ function ChartPanel({
     });
     chartRef.current = chart;
 
-    let firstLine: ISeriesApi<"Line"> | null = null;
-
     if (areaSeries && areaSeries.length > 0) {
       const a = chart.addAreaSeries({
         lineColor: areaColor ?? "#22c55e",
@@ -238,18 +236,20 @@ function ChartPanel({
     }
 
     if (lineSeries && lineSeries.length > 0) {
-      lineSeries.forEach((spec, idx) => {
+      // Build all line series, keep the array — first one is where markers attach.
+      // (Direct array build rather than forEach + closure-assign keeps TS's flow
+      // analysis from narrowing the marker target to `never`.)
+      const builtSeries: ISeriesApi<"Line">[] = lineSeries.map((spec, idx) => {
         const ls = chart.addLineSeries({
           color: spec.color,
           lineWidth: idx === 0 ? 2 : 1,
           title: spec.title,
         });
         ls.setData(spec.data.map((p) => ({ time: p.time as Time, value: p.value })));
-        if (idx === 0) firstLine = ls;
+        return ls;
       });
+      const firstLine = builtSeries[0];
       if (firstLine && markers && markers.length > 0) {
-        // lightweight-charts markers expect {time, position, color, shape, text}
-        // — VAM already returns this shape, just type-coerce.
         firstLine.setMarkers(
           markers.map((mk) => ({
             time: mk.time as Time,

@@ -19,7 +19,7 @@
  */
 import { useEffect, useMemo } from "react";
 import { RotateCcw } from "lucide-react";
-import type { VamParamSchemaField, VamStepSchema, VamSymbol } from "../../lib/api";
+import type { VamParamSchemaField, VamStepSchema } from "../../lib/api";
 
 // Mirrors VAM dashboard's PARAM_GROUPS map. Any field not listed here is
 // rendered under "Other" so a new VAM param doesn't disappear from our UI.
